@@ -16,10 +16,8 @@ class CryptoDetailViewModel: ObservableObject {
 
     init(coin: Crypto, viewModel: CryptoListViewModel, currency: String? = nil, applyConversion: Bool = false) {
         self.coin = coin
-        // Falls eine spezifische Währung übergeben wird, nutzen wir diese, sonst die aktuell im ViewModel ausgewählte.
         self.effectiveCurrency = currency ?? viewModel.selectedCurrency
         self.applyConversion = applyConversion
-        // Berechne den Umrechnungsfaktor von USD zur effektiven Währung.
         self.conversionFactor = viewModel.conversionFactor(for: self.effectiveCurrency)
     }
     
