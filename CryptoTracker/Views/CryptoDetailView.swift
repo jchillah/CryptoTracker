@@ -9,8 +9,7 @@ import SwiftUI
 
 struct CryptoDetailView: View {
     let coin: Crypto
-    let conversionRate: Double
-    let currency: String
+    @EnvironmentObject var viewModel: CryptoListViewModel
     
     var body: some View {
         ScrollView {
@@ -18,18 +17,18 @@ struct CryptoDetailView: View {
                 Text(coin.name)
                     .font(.largeTitle)
                     .bold()
-                Text("Preis: \(coin.currentPrice * conversionRate, specifier: "%.2f") \(currency.uppercased())")
+                Text("Preis: \(formatPrice(coin.currentPrice, currencyCode: viewModel.selectedCurrency.uppercased()))")
                     .font(.title2)
                     .foregroundColor(.gray)
-                Text("Marktkapitalisierung: \(coin.marketCap * conversionRate, specifier: "%.2f") \(currency.uppercased())")
+                Text("Marktkapitalisierung: \(formatPrice(coin.marketCap, currencyCode: viewModel.selectedCurrency.uppercased()))")
                     .font(.body)
-                Text("24-Stunden-Handelsvolumen: \(coin.volume * conversionRate, specifier: "%.2f") \(currency.uppercased())")
+                Text("24-Stunden-Handelsvolumen: \(formatPrice(coin.volume, currencyCode: viewModel.selectedCurrency.uppercased()))")
                     .font(.body)
                 Text("24h Preisänderung: \(coin.priceChangePercentage24h, specifier: "%.2f")%")
                     .foregroundColor(coin.priceChangePercentage24h >= 0 ? .green : .red)
                     .font(.body)
-                Text("24-Stunden-Höchstpreis: \(coin.high24h * conversionRate, specifier: "%.2f") \(currency.uppercased())")
-                Text("24-Stunden-Tiefstpreis: \(coin.low24h * conversionRate, specifier: "%.2f") \(currency.uppercased())")
+                Text("24-Stunden-Höchstpreis: \(formatPrice(coin.high24h, currencyCode: viewModel.selectedCurrency.uppercased()))")
+                Text("24-Stunden-Tiefstpreis: \(formatPrice(coin.low24h, currencyCode: viewModel.selectedCurrency.uppercased()))")
             }
             .padding()
         }
@@ -53,5 +52,6 @@ struct CryptoDetailView: View {
         priceChangePercentage24h: 3.07518,
         lastUpdated: "2025-03-12T13:36:39.814Z"
     )
-    CryptoDetailView(coin: sampleCrypto, conversionRate: 0.91, currency: "eur")
+    CryptoDetailView(coin: sampleCrypto)
+        .environmentObject(CryptoListViewModel())
 }

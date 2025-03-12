@@ -1,9 +1,3 @@
-//
-//  CryptoListViewModel.swift
-//  CryptoTracker
-//
-//  Created by Michael Winkler on 12.03.25.
-//
 
 import Foundation
 
@@ -21,8 +15,7 @@ class CryptoListViewModel: ObservableObject {
     private let service = CryptoService()
     private var lastFetchedAt: Date? = nil
     private var originalCoins: [Crypto] = []
-    private let throttleInterval: TimeInterval = 60 
-    private var isFetching = false
+    private let throttleInterval: TimeInterval = 60
     
     init() {
         Task {
@@ -93,6 +86,6 @@ class CryptoListViewModel: ObservableObject {
         if let lastFetch = lastFetchedAt {
             return Date().timeIntervalSince(lastFetch) > throttleInterval
         }
-        return true // Falls noch nie abgerufen
+        return true
     }
 }
