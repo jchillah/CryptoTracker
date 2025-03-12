@@ -8,6 +8,8 @@
 import SwiftUI
 
 struct MainView: View {
+    @StateObject var viewModel: CryptoListViewModel = .init()
+    
     var body: some View {
         TabView {
             CryptoListView()
@@ -28,4 +30,5 @@ struct MainView: View {
 
 #Preview {
     MainView()
+        .environmentObject(CryptoListViewModel())
 }
