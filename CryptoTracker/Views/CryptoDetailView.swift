@@ -13,7 +13,7 @@ struct CryptoDetailView: View {
     var applyConversion: Bool = false
     @EnvironmentObject var viewModel: CryptoListViewModel
     @EnvironmentObject var favoritesManager: FavoritesManager
-
+    
     var body: some View {
         let detailVM = CryptoDetailViewModel(coin: coin, viewModel: viewModel, currency: currency, applyConversion: applyConversion)
         
@@ -32,10 +32,13 @@ struct CryptoDetailView: View {
                 Text("24-Stunden-Höchstpreis: \(formatPrice(detailVM.effectiveHigh24h, currencyCode: detailVM.effectiveCurrency.uppercased()))")
                 Text("24-Stunden-Tiefstpreis: \(formatPrice(detailVM.effectiveLow24h, currencyCode: detailVM.effectiveCurrency.uppercased()))")
                 
-                let isFavorite = favoritesManager.isFavorite(coin: coin)
+                // Integriere den Chart, wobei effectiveCurrency als vsCurrency übergeben wird
+                PriceChartView(coinId: coin.id, vsCurrency: detailVM.effectiveCurrency)
+                
                 Button(action: {
                     favoritesManager.toggleFavorite(coin: coin)
                 }) {
+                    let isFavorite = favoritesManager.isFavorite(coin: coin)
                     HStack {
                         Image(systemName: isFavorite ? "star.fill" : "star")
                         Text(isFavorite ? "Aus Favoriten entfernen" : "Zu Favoriten hinzufügen")
@@ -71,5 +74,3 @@ struct CryptoDetailView: View {
         .environmentObject(CryptoListViewModel())
         .environmentObject(FavoritesManager())
 }
-
-
