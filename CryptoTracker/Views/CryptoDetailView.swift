@@ -32,12 +32,13 @@ struct CryptoDetailView: View {
                 Text("24-Stunden-Höchstpreis: \(formatPrice(detailVM.effectiveHigh24h, currencyCode: detailVM.effectiveCurrency.uppercased()))")
                 Text("24-Stunden-Tiefstpreis: \(formatPrice(detailVM.effectiveLow24h, currencyCode: detailVM.effectiveCurrency.uppercased()))")
                 
+                let isFavorite = favoritesManager.isFavorite(coin: coin)
                 Button(action: {
                     favoritesManager.toggleFavorite(coin: coin)
                 }) {
                     HStack {
-                        Image(systemName: favoritesManager.isFavorite(coin: coin) ? "star.fill" : "star")
-                        Text(favoritesManager.isFavorite(coin: coin) ? "Aus Favoriten entfernen" : "Zu Favoriten hinzufügen")
+                        Image(systemName: isFavorite ? "star.fill" : "star")
+                        Text(isFavorite ? "Aus Favoriten entfernen" : "Zu Favoriten hinzufügen")
                     }
                     .padding()
                     .background(Color.blue.opacity(0.1))
