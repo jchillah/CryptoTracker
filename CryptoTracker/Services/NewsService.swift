@@ -10,13 +10,14 @@ import Foundation
 class NewsService {
     private let baseURL = "https://newsapi.org/v2/everything"
     
+    // Der API-Key wird aus der iCloud Keychain abgerufen.
     private var apiKey: String? {
         return KeychainHelper.shared.getAPIKey()
     }
     
     func fetchNews() async throws -> [NewsArticle] {
         guard let apiKey = apiKey else {
-            throw NSError(domain: "NewsService", code: 1, userInfo: [NSLocalizedDescriptionKey: "API-Key nicht in der Keychain gefunden"])
+            throw NSError(domain: "NewsService", code: 1, userInfo: [NSLocalizedDescriptionKey: "API-Key nicht gefunden"])
         }
         
         let query = "cryptocurrency"

@@ -10,3 +10,5 @@ import Foundation
 struct PriceHistoryResponse: Decodable {
     let prices: [[Double]]
 }
+
+
