@@ -9,7 +9,7 @@ import Foundation
 
 class PriceHistoryService {
     
-    func fetchPriceHistory(for coinId: String, vsCurrency: String, days: Int) async throws -> [PriceData] {
+    func fetchPriceHistory(for coinId: String, vsCurrency: String) async throws -> [PriceData] {
         let effectiveDays = 365
         let urlString = "https://api.coingecko.com/api/v3/coins/\(coinId)/market_chart?vs_currency=\(vsCurrency)&days=\(effectiveDays)"
         guard let url = URL(string: urlString) else {
@@ -26,10 +26,14 @@ class PriceHistoryService {
             return try parsePriceHistoryData(data)
         } catch {
             if let localData = loadLocalJSON(for: coinId, vsCurrency: vsCurrency) {
-                return try parsePriceHistoryData(localData)
-            } else {
-                throw error
+                do {
+                    return try parsePriceHistoryData(localData)
+                } catch {
+                    print("Fehler beim Parsen der lokalen JSON-Daten: \(error)")
+                }
             }
+            print("Kein lokaler Cache verfügbar. Rückgabe eines leeren Arrays. Fehler: \(error)")
+            return []
         }
     }
     
