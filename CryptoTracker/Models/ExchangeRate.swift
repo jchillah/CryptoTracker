@@ -10,4 +10,3 @@ import Foundation
 struct ExchangeRate: Decodable {
     let value: Double
 }
-

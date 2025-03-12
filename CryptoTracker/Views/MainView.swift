@@ -9,6 +9,7 @@ import SwiftUI
 
 struct MainView: View {
     @StateObject var viewModel: CryptoListViewModel = .init()
+    @StateObject var favoritesManager: FavoritesManager = .init()
     
     var body: some View {
         TabView {
@@ -25,10 +26,11 @@ struct MainView: View {
                     Label("News", systemImage: "newspaper.fill")
                 }
         }
+        .environmentObject(viewModel)
+        .environmentObject(favoritesManager)
     }
 }
 
 #Preview {
     MainView()
-        .environmentObject(CryptoListViewModel())
 }

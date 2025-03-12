@@ -17,6 +17,10 @@ class CryptoListViewModel: ObservableObject {
     private var originalCoins: [Crypto] = []
     private let throttleInterval: TimeInterval = 60
     
+    var allOriginalCoins: [Crypto] {
+        return originalCoins
+    }
+
     init() {
         Task {
             await fetchExchangeRates()
@@ -24,6 +28,12 @@ class CryptoListViewModel: ObservableObject {
         }
     }
     
+    func conversionFactor(for currency: String) -> Double {
+        let baseRate = service.getConversionRate(for: "usd")
+        let targetRate = service.getConversionRate(for: currency)
+        return targetRate / baseRate
+    }
+
     func fetchCoins() async {
         guard shouldFetch() else {
             statusMessage = "Daten aus dem Cache verwendet."
@@ -51,7 +61,7 @@ class CryptoListViewModel: ObservableObject {
         }
     }
     
-    private func applyConversionRate() {
+    func applyConversionRate() {
         let baseRate = service.getConversionRate(for: baseCurrency)
         let targetRate = service.getConversionRate(for: selectedCurrency)
         let conversionFactor = targetRate / baseRate
