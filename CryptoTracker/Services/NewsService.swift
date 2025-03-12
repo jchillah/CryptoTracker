@@ -8,19 +8,39 @@
 import Foundation
 
 class NewsService {
-    // Dummy-API-Endpunkt – bitte ggf. anpassen oder einen echten API-Key verwenden
-    private let newsAPIURL = "https://api.example.com/crypto/news"
+    private let baseURL = "https://newsapi.org/v2/everything"
+    
+    private var apiKey: String? {
+        return KeychainHelper.shared.getAPIKey()
+    }
     
     func fetchNews() async throws -> [NewsArticle] {
-        guard let url = URL(string: newsAPIURL) else {
+        guard let apiKey = apiKey else {
+            throw NSError(domain: "NewsService", code: 1, userInfo: [NSLocalizedDescriptionKey: "API-Key nicht in der Keychain gefunden"])
+        }
+        
+        let query = "cryptocurrency"
+        let urlString = "\(baseURL)?q=\(query)&sortBy=publishedAt&language=en&apiKey=\(apiKey)"
+        guard let url = URL(string: urlString) else {
             throw URLError(.badURL)
         }
+        
         let (data, response) = try await URLSession.shared.data(from: url)
-        guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
+        guard let httpResponse = response as? HTTPURLResponse,
+              (200...299).contains(httpResponse.statusCode) else {
             throw URLError(.badServerResponse)
         }
+        
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
-        return try decoder.decode([NewsArticle].self, from: data)
+        
+        struct NewsAPIResponse: Decodable {
+            let status: String
+            let totalResults: Int
+            let articles: [NewsArticle]
+        }
+        
+        let apiResponse = try decoder.decode(NewsAPIResponse.self, from: data)
+        return apiResponse.articles
     }
 }
