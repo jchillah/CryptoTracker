@@ -8,12 +8,24 @@
 import SwiftUI
 
 struct CryptoListView: View {
+    @StateObject private var viewModel = CryptoListViewModel()
+    
     var body: some View {
         NavigationView {
-            List {
-                Text("Coin Liste kommt hier")
+            List(viewModel.coins) { coin in
+                NavigationLink(destination: CryptoDetailView(coin: coin)) {
+                    HStack {
+                        Text(coin.name)
+                        Spacer()
+                        Text("$\(coin.price, specifier: "%.2f")")
+                            .foregroundColor(.gray)
+                    }
+                }
             }
             .navigationTitle("Top Coins")
+            .onAppear {
+                viewModel.fetchCoins()
+            }
         }
     }
 }
