@@ -9,26 +9,41 @@ import SwiftUI
 
 struct CryptoDetailView: View {
     let coin: Crypto
+    var currency: String? = nil
+    var applyConversion: Bool = false
     @EnvironmentObject var viewModel: CryptoListViewModel
-    
+    @EnvironmentObject var favoritesManager: FavoritesManager
+
     var body: some View {
+        let detailVM = CryptoDetailViewModel(coin: coin, viewModel: viewModel, currency: currency, applyConversion: applyConversion)
+        
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                Text(coin.name)
-                    .font(.largeTitle)
-                    .bold()
-                Text("Preis: \(formatPrice(coin.currentPrice, currencyCode: viewModel.selectedCurrency.uppercased()))")
+                Text("Preis: \(formatPrice(detailVM.effectivePrice, currencyCode: detailVM.effectiveCurrency.uppercased()))")
                     .font(.title2)
                     .foregroundColor(.gray)
-                Text("Marktkapitalisierung: \(formatPrice(coin.marketCap, currencyCode: viewModel.selectedCurrency.uppercased()))")
+                Text("Marktkapitalisierung: \(formatPrice(detailVM.effectiveMarketCap, currencyCode: detailVM.effectiveCurrency.uppercased()))")
                     .font(.body)
-                Text("24-Stunden-Handelsvolumen: \(formatPrice(coin.volume, currencyCode: viewModel.selectedCurrency.uppercased()))")
+                Text("24-Stunden-Handelsvolumen: \(formatPrice(detailVM.effectiveVolume, currencyCode: detailVM.effectiveCurrency.uppercased()))")
                     .font(.body)
                 Text("24h Preisänderung: \(coin.priceChangePercentage24h, specifier: "%.2f")%")
                     .foregroundColor(coin.priceChangePercentage24h >= 0 ? .green : .red)
                     .font(.body)
-                Text("24-Stunden-Höchstpreis: \(formatPrice(coin.high24h, currencyCode: viewModel.selectedCurrency.uppercased()))")
-                Text("24-Stunden-Tiefstpreis: \(formatPrice(coin.low24h, currencyCode: viewModel.selectedCurrency.uppercased()))")
+                Text("24-Stunden-Höchstpreis: \(formatPrice(detailVM.effectiveHigh24h, currencyCode: detailVM.effectiveCurrency.uppercased()))")
+                Text("24-Stunden-Tiefstpreis: \(formatPrice(detailVM.effectiveLow24h, currencyCode: detailVM.effectiveCurrency.uppercased()))")
+                
+                let isFavorite = favoritesManager.isFavorite(coin: coin)
+                Button(action: {
+                    favoritesManager.toggleFavorite(coin: coin)
+                }) {
+                    HStack {
+                        Image(systemName: isFavorite ? "star.fill" : "star")
+                        Text(isFavorite ? "Aus Favoriten entfernen" : "Zu Favoriten hinzufügen")
+                    }
+                    .padding()
+                    .background(Color.blue.opacity(0.1))
+                    .cornerRadius(8)
+                }
             }
             .padding()
         }
@@ -52,6 +67,9 @@ struct CryptoDetailView: View {
         priceChangePercentage24h: 3.07518,
         lastUpdated: "2025-03-12T13:36:39.814Z"
     )
-    CryptoDetailView(coin: sampleCrypto)
+    CryptoDetailView(coin: sampleCrypto, currency: "eur", applyConversion: true)
         .environmentObject(CryptoListViewModel())
+        .environmentObject(FavoritesManager())
 }
+
+

@@ -42,6 +42,6 @@ class CryptoService {
     }
     
     func getConversionRate(for currency: String) -> Double {
-        return exchangeRates[currency.lowercased()] ?? 1.0 // Standardwert für USD
+        return exchangeRates[currency.lowercased()] ?? 1.0 
     }
 }

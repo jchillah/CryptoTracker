@@ -37,18 +37,21 @@ struct CryptoListView: View {
                         .padding()
                 } else {
                     List(viewModel.coins) { coin in
-                        HStack {
-                            AsyncImage(url: URL(string: coin.image)) { image in
-                                image.resizable()
-                                    .scaledToFit()
-                                    .frame(width: 32, height: 32)
-                            } placeholder: {
-                                ProgressView()
+                        NavigationLink(destination: CryptoDetailView(coin: coin)
+                                        .environmentObject(viewModel)) {
+                            HStack {
+                                AsyncImage(url: URL(string: coin.image)) { image in
+                                    image.resizable()
+                                        .scaledToFit()
+                                        .frame(width: 32, height: 32)
+                                } placeholder: {
+                                    ProgressView()
+                                }
+                                Text(coin.name)
+                                Spacer()
+                                Text(formatPrice(coin.currentPrice, currencyCode: viewModel.selectedCurrency.uppercased()))
+                                    .foregroundColor(.gray)
                             }
-                            Text(coin.name)
-                            Spacer()
-                            Text(formatPrice(coin.currentPrice, currencyCode: viewModel.selectedCurrency.uppercased()))
-                                .foregroundColor(.gray)
                         }
                     }
                 }
