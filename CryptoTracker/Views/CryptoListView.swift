@@ -54,6 +54,9 @@ struct CryptoListView: View {
                             }
                         }
                     }
+                    .refreshable {
+                        await viewModel.fetchCoins()
+                    }
                 }
             }
             .navigationTitle("Krypto-Preise")
