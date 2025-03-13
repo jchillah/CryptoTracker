@@ -31,6 +31,7 @@ class CryptoListViewModel: ObservableObject {
         Task {
             await fetchExchangeRates()
             await fetchCoins()
+            startTimer()
         }
     }
     
@@ -103,5 +104,16 @@ class CryptoListViewModel: ObservableObject {
             return Date().timeIntervalSince(lastFetch) > throttleInterval
         }
         return true
+    }
+    
+    private func startTimer() {
+        Task {
+            while true {
+                try await Task
+                    .sleep(nanoseconds: UInt64(throttleInterval * 1_000_000_000)
+                    )
+                await fetchCoins()
+            }
+        }
     }
 }
