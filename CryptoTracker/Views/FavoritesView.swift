@@ -6,10 +6,12 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct FavoritesView: View {
     @EnvironmentObject var favoritesViewModel: FavoritesViewModel
     @EnvironmentObject var viewModel: CryptoListViewModel
+    @Environment(\.modelContext) var modelContext: ModelContext
     @State private var favoritesCurrency: String = "usd"
     
     var conversionFactor: Double {
@@ -44,7 +46,8 @@ struct FavoritesView: View {
                                 destination: CryptoDetailView(
                                     coin: coin,
                                     currency: favoritesCurrency,
-                                    applyConversion: true
+                                    applyConversion: true,
+                                    modelContext: _modelContext
                                 )
                                 .environmentObject(viewModel)
                                 .environmentObject(favoritesViewModel)
@@ -80,7 +83,10 @@ struct FavoritesView: View {
 }
 
 #Preview {
+    let container = try! ModelContainer(for: Schema([CryptoEntity.self, ChartDataEntity.self]))
     FavoritesView()
         .environmentObject(FavoritesViewModel())
-        .environmentObject(CryptoListViewModel())
+        .environmentObject(CryptoListViewModel(modelContext: container.mainContext))
+        .modelContainer(container)
 }
+

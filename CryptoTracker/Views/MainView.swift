@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct MainView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
@@ -44,10 +45,13 @@ struct MainView: View {
 }
 
 #Preview {
+    let container = try! ModelContainer(for: Schema([CryptoEntity.self, ChartDataEntity.self]))
     MainView()
         .environmentObject(AuthViewModel())
-        .environmentObject(CryptoListViewModel())
+        .environmentObject(CryptoListViewModel(modelContext: container.mainContext))
         .environmentObject(FavoritesViewModel())
         .environmentObject(SettingsViewModel())
         .environmentObject(FavoritesManager())
+        .modelContainer(container)
 }
+

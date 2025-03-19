@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct CryptoDetailView: View {
     let coin: Crypto
@@ -14,10 +15,17 @@ struct CryptoDetailView: View {
     @EnvironmentObject var settings: SettingsViewModel
     @EnvironmentObject var viewModel: CryptoListViewModel
     @EnvironmentObject var favoritesManager: FavoritesManager
-    @EnvironmentObject var faoritesViewModel: FavoritesViewModel
+    @EnvironmentObject var favoritesViewModel: FavoritesViewModel
+    @Environment(\.modelContext) var modelContext: ModelContext
     
     var body: some View {
-        let detailVM = CryptoDetailViewModel(coin: coin, viewModel: viewModel, currency: currency, applyConversion: applyConversion)
+        let detailVM = CryptoDetailViewModel(
+            coin: coin,
+            viewModel: viewModel,
+            currency: currency,
+            applyConversion: applyConversion,
+            modelContext: modelContext
+        )
         
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
@@ -35,7 +43,11 @@ struct CryptoDetailView: View {
                 Text("24-Stunden-Tiefstpreis: \(CurrencyFormatter.formatPrice(detailVM.effectiveLow24h, currencyCode: detailVM.effectiveCurrency.uppercased()))")
                 
                 // Chart anzeigen
-                PriceChartView(coinId: coin.id, vsCurrency: detailVM.effectiveCurrency)
+                PriceChartView(
+                    coinId: coin.id,
+                    vsCurrency: detailVM.effectiveCurrency,
+                    modelContext: modelContext
+                )
                 
                 Button(action: {
                     favoritesManager.toggleFavorite(coin: coin)
@@ -57,6 +69,8 @@ struct CryptoDetailView: View {
 }
 
 #Preview {
+    // Erstelle einen SwiftData-Container für die Vorschau
+    let container = try! ModelContainer(for: Schema([CryptoEntity.self, ChartDataEntity.self]))
     let sampleCrypto = Crypto(
         id: "bitcoin",
         symbol: "btc",
@@ -73,8 +87,9 @@ struct CryptoDetailView: View {
         lastUpdated: "2025-03-12T13:36:39.814Z"
     )
     CryptoDetailView(coin: sampleCrypto, currency: "eur", applyConversion: true)
-        .environmentObject(CryptoListViewModel())
+        .environmentObject(CryptoListViewModel(modelContext: container.mainContext))
         .environmentObject(FavoritesManager())
         .environmentObject(SettingsViewModel())
-        .environmentObject(FavoritesManager())
+        .environmentObject(FavoritesViewModel())
+        .modelContainer(container)
 }

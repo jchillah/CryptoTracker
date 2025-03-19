@@ -7,6 +7,7 @@
 
 import SwiftUI
 import FirebaseFirestore
+import SwiftData
 
 struct CryptoListView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
@@ -71,9 +72,11 @@ struct CryptoListView: View {
 }
 
 #Preview {
+    let container = try! ModelContainer(for: Schema([CryptoEntity.self, ChartDataEntity.self]))
     CryptoListView()
         .environmentObject(AuthViewModel())
-        .environmentObject(CryptoListViewModel())
+        .environmentObject(CryptoListViewModel(modelContext: container.mainContext))
         .environmentObject(FavoritesViewModel())
         .environmentObject(FavoritesManager())
+        .modelContainer(container)
 }

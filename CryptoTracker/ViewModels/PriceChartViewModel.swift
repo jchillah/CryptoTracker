@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import SwiftData
 
 @MainActor
 class PriceChartViewModel: ObservableObject {
@@ -20,16 +21,18 @@ class PriceChartViewModel: ObservableObject {
     
     var conversionRates: [String: Double] = ["usd": 1.0, "eur": 0.92, "gbp": 0.78]
     
-    private let service = ChartDataService()
+    private var service: ChartDataService
+    
+    // Initialisiere den Service mit dem ModelContext, der z.B. aus dem SwiftData-Container kommt
+    init(modelContext: ModelContext) {
+        self.service = ChartDataService(modelContext: modelContext)
+    }
     
     func fetchPriceHistory(for coinId: String) async {
         isLoading = true
         errorMessage = nil
         do {
-            let data = try await service.fetchChartData(
-                for: coinId,
-                vsCurrency: "usd"
-            )
+            let data = try await service.fetchChartData(for: coinId, vsCurrency: "usd")
             allPriceData = data
             applyConversionRate() 
         } catch {

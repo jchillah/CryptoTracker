@@ -6,8 +6,16 @@
 //
 
 import Foundation
+import SwiftData
 
 class ChartDataService {
+    // Neuer Property: SwiftData ModelContext
+    private var modelContext: ModelContext
+
+    // Initialisiere den Service mit dem ModelContext
+    init(modelContext: ModelContext) {
+        self.modelContext = modelContext
+    }
     
     func fetchChartData(for coinId: String, vsCurrency: String) async throws -> [ChartData] {
         let urlString = "https://api.coingecko.com/api/v3/coins/\(coinId)/market_chart?vs_currency=\(vsCurrency)&days=365"
@@ -30,15 +38,18 @@ class ChartDataService {
                 throw URLError(.badServerResponse)
             }
             
+            // Bestehende Funktionalität zum lokalen Speichern der JSON beibehalten
             saveDataToLocalJSON(data: data, for: coinId, vsCurrency: vsCurrency)
-            return try parseChartData(data)
+            let chartData = try parseChartData(data)
+            
+            // Persistiere die Daten in SwiftData
+            saveChartDataToDatabase(chartData: chartData, coinId: coinId, vsCurrency: vsCurrency)
+            return chartData
         } catch {
-            if let localData = loadLocalJSON(for: coinId, vsCurrency: vsCurrency) {
-                do {
-                    return try parseChartData(localData)
-                } catch {
-                    print("Fehler beim Parsen der lokalen JSON-Daten: \(error)")
-                }
+            // Falls ein Fehler auftritt (z. B. API-Limit), versuche, persistierte Daten zu laden
+            let entities = loadChartDataFromDatabase(for: coinId, vsCurrency: vsCurrency)
+            if !entities.isEmpty {
+                return entities.map { $0.toChartData() }
             }
             if let urlError = error as? URLError, urlError.code == .badServerResponse {
                 throw NSError(domain: "ChartDataService", code: -1011, userInfo: [NSLocalizedDescriptionKey: "Abfrage-Limit erreicht, bitte versuchen Sie es in einer Minute erneut."])
@@ -79,5 +90,28 @@ class ChartDataService {
     private func loadLocalJSON(for coinId: String, vsCurrency: String) -> Data? {
         let fileURL = localFileURL(for: coinId, vsCurrency: vsCurrency)
         return try? Data(contentsOf: fileURL)
+    }
+    
+    // MARK: - SwiftData Persistenz
+    
+    private func saveChartDataToDatabase(chartData: [ChartData], coinId: String, vsCurrency: String) {
+        // Optional: Vorherige Einträge für diesen coinId/ vsCurrency löschen, um Duplikate zu vermeiden
+        let existing = loadChartDataFromDatabase(for: coinId, vsCurrency: vsCurrency)
+        for entity in existing {
+            modelContext.delete(entity)
+        }
+        
+        chartData.forEach { data in
+            let entity = ChartDataEntity(from: data)
+            modelContext.insert(entity)
+        }
+        try? modelContext.save()
+    }
+    
+    private func loadChartDataFromDatabase(for coinId: String, vsCurrency: String) -> [ChartDataEntity] {
+        // Für dieses Beispiel werden alle ChartDataEntity geladen.
+        // In einer echten App solltest du nach coinId und vsCurrency filtern (z.B. über zusätzliche Attribute).
+        let fetchDescriptor = FetchDescriptor<ChartDataEntity>()
+        return (try? modelContext.fetch(fetchDescriptor)) ?? []
     }
 }

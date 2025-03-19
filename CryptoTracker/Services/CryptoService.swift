@@ -6,12 +6,18 @@
 //
 
 import Foundation
+import SwiftData
 
 class CryptoService {
     private let coinDataURLBase = "https://api.coingecko.com/api/v3/coins/markets?vs_currency="
     private let exchangeRatesURL = "https://api.coingecko.com/api/v3/exchange_rates"
     
     private var exchangeRates: [String: Double] = [:]
+    private var modelContext: ModelContext
+
+    init(modelContext: ModelContext) {
+        self.modelContext = modelContext
+    }
     
     func fetchCryptoData(for currency: String) async throws -> [Crypto] {
         let urlString = "\(coinDataURLBase)\(currency)"
@@ -34,10 +40,31 @@ class CryptoService {
                 throw URLError(.badServerResponse)
             }
             
-            return try JSONDecoder().decode([Crypto].self, from: data)
+            let coins = try JSONDecoder().decode([Crypto].self, from: data)
+            saveCoinsToDatabase(coins: coins)  // Speichern in SwiftData
+            return coins
         } catch {
-            if let urlError = error as? URLError, urlError.code == .badServerResponse {
-                throw NSError(domain: "CryptoService", code: -1011, userInfo: [NSLocalizedDescriptionKey: "Abfrage-Limit erreicht, bitte versuchen Sie es in einer Minute erneut."])
+            // Falls ein Fehler auftritt, versuche, die persistierten Daten zu laden
+            let localCoins = loadCoinsFromDatabase()
+            if !localCoins.isEmpty {
+                // Mappe CryptoEntity zurück in Crypto
+                return localCoins.map { entity in
+                    return Crypto(
+                        id: entity.id,
+                        symbol: entity.symbol,
+                        name: entity.name,
+                        image: entity.image,
+                        currentPrice: entity.currentPrice,
+                        marketCap: entity.marketCap,
+                        marketCapRank: entity.marketCapRank,
+                        volume: entity.volume,
+                        high24h: entity.high24h,
+                        low24h: entity.low24h,
+                        priceChange24h: entity.priceChange24h,
+                        priceChangePercentage24h: entity.priceChangePercentage24h,
+                        lastUpdated: ISO8601DateFormatter().string(from: entity.lastUpdated)
+                    )
+                }
             }
             throw error
         }
@@ -72,5 +99,20 @@ class CryptoService {
     
     func getConversionRate(for currency: String) -> Double {
         return exchangeRates[currency.lowercased()] ?? 1.0 
+    }
+    
+    // Speichere die Coins in SwiftData
+    private func saveCoinsToDatabase(coins: [Crypto]) {
+        for coin in coins {
+            let entity = CryptoEntity(from: coin)
+            modelContext.insert(entity)
+        }
+        try? modelContext.save()
+    }
+    
+    // Lade die Coins aus SwiftData
+    private func loadCoinsFromDatabase() -> [CryptoEntity] {
+        let fetchDescriptor = FetchDescriptor<CryptoEntity>()
+        return (try? modelContext.fetch(fetchDescriptor)) ?? []
     }
 }

@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import SwiftData
 
 @MainActor
 class CryptoListViewModel: ObservableObject {
@@ -19,7 +20,7 @@ class CryptoListViewModel: ObservableObject {
     }
     
     private let baseCurrency: String = "usd"
-    private let service = CryptoService()
+    private var service: CryptoService
     private var lastFetchedAt: Date? = nil
     private var originalCoins: [Crypto] = []
     private let throttleInterval: TimeInterval = 60
@@ -28,7 +29,8 @@ class CryptoListViewModel: ObservableObject {
         return originalCoins
     }
 
-    init() {
+    init(modelContext: ModelContext) {
+        self.service = CryptoService(modelContext: modelContext)
         Task {
             await fetchExchangeRates()
             await fetchCoins()
@@ -44,11 +46,11 @@ class CryptoListViewModel: ObservableObject {
 
     func fetchCoins() async {
         guard shouldFetch() else {
-            statusMessage = "Keine neuen Daten verfügbar.(letztes Update: \(DateFormatterUtil.formatDateToGermanStyle(Date())))"
+            statusMessage = "Keine neuen Daten verfügbar. (letztes Update: \(DateFormatterUtil.formatDateToGermanStyle(Date())))"
             applyConversionRate()
             return
         }
-        
+
         do {
             statusMessage = "Laden…"
             let fetchedCoins = try await service.fetchCryptoData(for: baseCurrency)
@@ -56,6 +58,12 @@ class CryptoListViewModel: ObservableObject {
             coins = fetchedCoins
             lastFetchedAt = Date()
             statusMessage = "Daten aktualisiert (letztes Update: \(DateFormatterUtil.formatDateToGermanStyle(Date())))"
+        } catch let urlError as URLError {
+            if urlError.code == .badServerResponse {
+                statusMessage = "Abfrage-Limit erreicht, bitte versuchen Sie es in einer Minute erneut."
+            } else {
+                statusMessage = "Fehler beim Laden der Daten: \(urlError.localizedDescription)"
+            }
         } catch {
             statusMessage = "Fehler beim Laden der Daten: \(error.localizedDescription)"
         }

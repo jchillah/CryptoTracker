@@ -1,12 +1,28 @@
+//
+//  PriceHistoryService.swift
+//  CryptoTracker
+//
+//  Created by Michael Winkler on 12.03.25.
+//
+
 import SwiftUI
 import Charts
+import SwiftData
 
 struct PriceChartView: View {
-    @StateObject var viewModel: PriceChartViewModel = PriceChartViewModel()
+    @StateObject var viewModel: PriceChartViewModel
     let coinId: String
     let vsCurrency: String
     
     @State private var selectedDuration: ChartDuration = .week
+    @Environment(\.modelContext) var modelContext: ModelContext
+
+    // Initialisiere den ViewModel mithilfe des übergebenen ModelContext
+    init(coinId: String, vsCurrency: String, modelContext: ModelContext) {
+        self.coinId = coinId
+        self.vsCurrency = vsCurrency
+        _viewModel = StateObject(wrappedValue: PriceChartViewModel(modelContext: modelContext))
+    }
     
     var body: some View {
         VStack {
@@ -30,6 +46,7 @@ struct PriceChartView: View {
                 let filteredData = viewModel.filteredData(for: selectedDuration)
                 if filteredData.isEmpty {
                     Text("Keine Daten verfügbar, versuche es bitte in einer Minute erneut.")
+                        .foregroundStyle(.red)
                 } else {
                     Chart {
                         ForEach(filteredData) { dataPoint in
@@ -59,5 +76,11 @@ struct PriceChartView: View {
 }
 
 #Preview {
-    PriceChartView(coinId: "bitcoin", vsCurrency: "usd")
+    let container = try! ModelContainer(for: Schema([CryptoEntity.self, ChartDataEntity.self]))
+    PriceChartView(
+        coinId: "bitcoin",
+        vsCurrency: "usd",
+        modelContext: container.mainContext
+    )
+    .modelContainer(container)
 }

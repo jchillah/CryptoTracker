@@ -8,21 +8,24 @@
 import SwiftUI
 import Firebase
 import FirebaseAuth
+import SwiftData
 
 @main
 struct CryptoTrackerApp: App {
     @AppStorage("isDarkMode") var isDarkMode: Bool = false
     
+    let container: ModelContainer
+
     @StateObject private var authViewModel = AuthViewModel()
     @StateObject private var favoritesViewModel = FavoritesViewModel()
-    @StateObject private var cryptoListViewModel = CryptoListViewModel()
+    @StateObject private var cryptoListViewModel: CryptoListViewModel
     @StateObject private var favoritesManager = FavoritesManager()
     @StateObject private var settingsViewModel = SettingsViewModel()
-    
-    /// API-Key erstellen auf https://newsapi.org/
-    /// API-Key einfügen, App einmal starten damit wird der API-Key in Keychain gespeichert
-    /// API-Key einmal speichern (auskommentiert, wenn nicht mehr benötigt)
+    // Entferne die Inline-Initialisierung:
+    @StateObject private var priceChartViewModel: PriceChartViewModel
+
     init() {
+        // Deine Kommentare bleiben erhalten:
         //         let saved = KeychainHelper.shared.saveAPIKey("YOUR_API_KEY_HERE")
         //         if saved {
         //             print("API-Key erfolgreich in der Keychain gespeichert.")
@@ -30,6 +33,12 @@ struct CryptoTrackerApp: App {
         //             print("Fehler beim Speichern des API-Keys.")
         //         }
         FirebaseApp.configure()
+        let schema = Schema([CryptoEntity.self, ChartDataEntity.self])
+        self.container = try! ModelContainer(for: schema)
+        let mainContext = container.mainContext
+        _cryptoListViewModel = StateObject(wrappedValue: CryptoListViewModel(modelContext: mainContext))
+        // Initialisiere priceChartViewModel im Initialisierer, statt in der Property-Deklaration:
+        _priceChartViewModel = StateObject(wrappedValue: PriceChartViewModel(modelContext: mainContext))
     }
     
     var body: some Scene {
@@ -41,8 +50,9 @@ struct CryptoTrackerApp: App {
                 .environmentObject(cryptoListViewModel)
                 .environmentObject(favoritesManager)
                 .environmentObject(settingsViewModel)
+                .environmentObject(priceChartViewModel)
+                .modelContainer(container)
                 .task {
-                    // Lade die Dark Mode-Einstellung aus Firestore, falls ein Nutzer angemeldet ist
                     if let userId = Auth.auth().currentUser?.uid {
                         do {
                             let settings = try await SettingsRepository.shared.fetchSettings(for: userId)

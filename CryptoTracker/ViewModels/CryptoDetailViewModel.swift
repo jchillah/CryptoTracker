@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import SwiftData
 
 @MainActor
 class CryptoDetailViewModel: ObservableObject {
@@ -13,12 +14,15 @@ class CryptoDetailViewModel: ObservableObject {
     let applyConversion: Bool
     private let parentViewModel: CryptoListViewModel
     private let fixedCurrency: String?
+    // Optional: Speichere den ModelContext, falls benötigt
+    private let modelContext: ModelContext
 
-    init(coin: Crypto, viewModel: CryptoListViewModel, currency: String? = nil, applyConversion: Bool = false) {
+    init(coin: Crypto, viewModel: CryptoListViewModel, currency: String? = nil, applyConversion: Bool = false, modelContext: ModelContext) {
         self.coin = coin
         self.applyConversion = applyConversion
         self.parentViewModel = viewModel
         self.fixedCurrency = currency
+        self.modelContext = modelContext
     }
     
     var effectiveCurrency: String {
@@ -49,38 +53,3 @@ class CryptoDetailViewModel: ObservableObject {
         applyConversion ? coin.low24h * conversionFactor : coin.low24h
     }
 }
-
-//@MainActor
-//class CryptoDetailViewModel: ObservableObject {
-//    let coin: Crypto
-//    let effectiveCurrency: String
-//    let applyConversion: Bool
-//    let conversionFactor: Double
-//
-//    init(coin: Crypto, viewModel: CryptoListViewModel, currency: String? = nil, applyConversion: Bool = false) {
-//        self.coin = coin
-//        self.effectiveCurrency = currency ?? viewModel.selectedCurrency
-//        self.applyConversion = applyConversion
-//        self.conversionFactor = viewModel.conversionFactor(for: self.effectiveCurrency)
-//    }
-//    
-//    var effectivePrice: Double {
-//        applyConversion ? coin.currentPrice * conversionFactor : coin.currentPrice
-//    }
-//    
-//    var effectiveMarketCap: Double {
-//        applyConversion ? coin.marketCap * conversionFactor : coin.marketCap
-//    }
-//    
-//    var effectiveVolume: Double {
-//        applyConversion ? coin.volume * conversionFactor : coin.volume
-//    }
-//    
-//    var effectiveHigh24h: Double {
-//        applyConversion ? coin.high24h * conversionFactor : coin.high24h
-//    }
-//    
-//    var effectiveLow24h: Double {
-//        applyConversion ? coin.low24h * conversionFactor : coin.low24h
-//    }
-//}
