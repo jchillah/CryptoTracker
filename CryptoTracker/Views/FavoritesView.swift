@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct FavoritesView: View {
-    @EnvironmentObject var favoritesManager: FavoritesManager
+    @EnvironmentObject var favoritesViewModel: FavoritesViewModel
     @EnvironmentObject var viewModel: CryptoListViewModel
     @State private var favoritesCurrency: String = "usd"
     
@@ -16,8 +16,9 @@ struct FavoritesView: View {
         viewModel.conversionFactor(for: favoritesCurrency)
     }
     
+    // Filtere alle Original-Coins anhand der Favoriten-IDs
     var favoriteCoins: [Crypto] {
-        viewModel.allOriginalCoins.filter { favoritesManager.favoriteIDs.contains($0.id) }
+        viewModel.allOriginalCoins.filter { favoritesViewModel.favoriteIDs.contains($0.id) }
     }
     
     var body: some View {
@@ -46,7 +47,8 @@ struct FavoritesView: View {
                                     currency: favoritesCurrency,
                                     applyConversion: true
                                 )
-                                .environmentObject(viewModel)
+                                .environmentObject(viewModel)            // Hier als EnvironmentObject
+                                .environmentObject(favoritesViewModel)
                             ) {
                                 HStack {
                                     AsyncImage(url: URL(string: coin.image)) { image in
@@ -58,14 +60,20 @@ struct FavoritesView: View {
                                     }
                                     Text(coin.name)
                                     Spacer()
-                                    Text(formatPrice(coin.currentPrice * conversionFactor, currencyCode: favoritesCurrency.uppercased()))
+                                    Text(CurrencyFormatter.formatPrice(coin.currentPrice * conversionFactor, currencyCode: favoritesCurrency.uppercased()))
                                         .foregroundColor(.gray)
                                 }
                             }
                         }
+                        .listStyle(.plain)
                     }
                 }
                 .navigationTitle("Favoriten")
+            }
+            .onAppear {
+                Task {
+                    favoritesViewModel.loadFavorites()
+                }
             }
         }
     }
@@ -73,6 +81,6 @@ struct FavoritesView: View {
 
 #Preview {
     FavoritesView()
-        .environmentObject(FavoritesManager())
+        .environmentObject(FavoritesViewModel())
         .environmentObject(CryptoListViewModel())
 }

@@ -9,7 +9,7 @@ import Foundation
 
 @MainActor
 class PriceChartViewModel: ObservableObject {
-    @Published var allPriceData: [PriceData] = []
+    @Published var allPriceData: [ChartData] = []
     @Published var isLoading: Bool = false
     @Published var errorMessage: String? = nil
     
@@ -19,7 +19,7 @@ class PriceChartViewModel: ObservableObject {
         isLoading = true
         errorMessage = nil
         do {
-            let data = try await service.fetchPriceHistory(for: coinId, vsCurrency: vsCurrency, days: 365)
+            let data = try await service.fetchPriceHistory(for: coinId, vsCurrency: vsCurrency)
             allPriceData = data
         } catch {
             errorMessage = error.localizedDescription
@@ -27,7 +27,7 @@ class PriceChartViewModel: ObservableObject {
         isLoading = false
     }
     
-    func filteredData(for duration: ChartDuration) -> [PriceData] {
+    func filteredData(for duration: ChartDuration) -> [ChartData] {
         let cutoffDate = Calendar.current.date(byAdding: .day, value: -duration.days, to: Date()) ?? Date()
         return allPriceData.filter { $0.date >= cutoffDate }
     }
@@ -35,7 +35,7 @@ class PriceChartViewModel: ObservableObject {
 
 //@MainActor
 //class PriceChartViewModel: ObservableObject {
-//    @Published var priceData: [PriceData] = []
+//    @Published var priceData: [chartData] = []
 //    @Published var isLoading: Bool = false
 //    @Published var errorMessage: String? = nil
 //    

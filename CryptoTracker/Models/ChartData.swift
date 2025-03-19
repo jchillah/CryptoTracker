@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct PriceData: Identifiable {
+struct ChartData: Identifiable {
     let id = UUID()
     let date: Date
     let price: Double

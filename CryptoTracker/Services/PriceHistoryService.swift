@@ -9,9 +9,8 @@ import Foundation
 
 class PriceHistoryService {
     
-    func fetchPriceHistory(for coinId: String, vsCurrency: String) async throws -> [PriceData] {
-        let effectiveDays = 365
-        let urlString = "https://api.coingecko.com/api/v3/coins/\(coinId)/market_chart?vs_currency=\(vsCurrency)&days=\(effectiveDays)"
+    func fetchPriceHistory(for coinId: String, vsCurrency: String) async throws -> [ChartData] {
+        let urlString = "https://api.coingecko.com/api/v3/coins/\(coinId)/market_chart?vs_currency=\(vsCurrency)&days=365"
         guard let url = URL(string: urlString) else {
             throw URLError(.badURL)
         }
@@ -37,15 +36,15 @@ class PriceHistoryService {
         }
     }
     
-    private func parsePriceHistoryData(_ data: Data) throws -> [PriceData] {
+    private func parsePriceHistoryData(_ data: Data) throws -> [ChartData] {
         let decoder = JSONDecoder()
-        let historyResponse = try decoder.decode(PriceHistoryResponse.self, from: data)
-        let priceData: [PriceData] = historyResponse.prices.compactMap { array in
+        let historyResponse = try decoder.decode(ChartHistoryResponse.self, from: data)
+        let priceData: [ChartData] = historyResponse.prices.compactMap { array in
             guard array.count >= 2 else { return nil }
             let timestamp = array[0]
             let price = array[1]
             let date = Date(timeIntervalSince1970: timestamp / 1000)
-            return PriceData(date: date, price: price)
+            return ChartData(date: date, price: price)
         }
         return priceData
     }

@@ -5,7 +5,6 @@
 //  Created by Michael Winkler on 12.03.25.
 //
 
-
 import SwiftUI
 import Charts
 

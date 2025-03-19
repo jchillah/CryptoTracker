@@ -7,6 +7,6 @@
 
 import Foundation
 
-struct PriceHistoryResponse: Decodable {
+struct ChartHistoryResponse: Decodable {
     let prices: [[Double]]
 }

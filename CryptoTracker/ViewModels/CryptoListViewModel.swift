@@ -9,6 +9,7 @@ import Foundation
 
 @MainActor
 class CryptoListViewModel: ObservableObject {
+    @Published var lastUpdate: Date? = nil
     @Published var coins: [Crypto] = []
     @Published var statusMessage: String = "Laden…"
     @Published var selectedCurrency: String = "usd" {
@@ -93,7 +94,7 @@ class CryptoListViewModel: ObservableObject {
     }
     
     func formattedPrice(for coin: Crypto) -> String {
-        return formatPrice(
+        return CurrencyFormatter.formatPrice(
             coin.currentPrice,
             currencyCode: selectedCurrency.uppercased()
         )

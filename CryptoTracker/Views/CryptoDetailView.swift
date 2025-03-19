@@ -11,28 +11,30 @@ struct CryptoDetailView: View {
     let coin: Crypto
     var currency: String? = nil
     var applyConversion: Bool = false
+    @EnvironmentObject var settings: SettingsViewModel
     @EnvironmentObject var viewModel: CryptoListViewModel
     @EnvironmentObject var favoritesManager: FavoritesManager
+    @EnvironmentObject var faoritesViewModel: FavoritesViewModel
     
     var body: some View {
         let detailVM = CryptoDetailViewModel(coin: coin, viewModel: viewModel, currency: currency, applyConversion: applyConversion)
         
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                Text("Preis: \(formatPrice(detailVM.effectivePrice, currencyCode: detailVM.effectiveCurrency.uppercased()))")
+                Text("Preis: \(CurrencyFormatter.formatPrice(detailVM.effectivePrice, currencyCode: detailVM.effectiveCurrency.uppercased()))")
                     .font(.title2)
                     .foregroundColor(.gray)
-                Text("Marktkapitalisierung: \(formatPrice(detailVM.effectiveMarketCap, currencyCode: detailVM.effectiveCurrency.uppercased()))")
+                Text("Marktkapitalisierung: \(CurrencyFormatter.formatPrice(detailVM.effectiveMarketCap, currencyCode: detailVM.effectiveCurrency.uppercased()))")
                     .font(.body)
-                Text("24-Stunden-Handelsvolumen: \(formatPrice(detailVM.effectiveVolume, currencyCode: detailVM.effectiveCurrency.uppercased()))")
+                Text("24-Stunden-Handelsvolumen: \(CurrencyFormatter.formatPrice(detailVM.effectiveVolume, currencyCode: detailVM.effectiveCurrency.uppercased()))")
                     .font(.body)
                 Text("24h Preisänderung: \(coin.priceChangePercentage24h, specifier: "%.2f")%")
                     .foregroundColor(coin.priceChangePercentage24h >= 0 ? .green : .red)
                     .font(.body)
-                Text("24-Stunden-Höchstpreis: \(formatPrice(detailVM.effectiveHigh24h, currencyCode: detailVM.effectiveCurrency.uppercased()))")
-                Text("24-Stunden-Tiefstpreis: \(formatPrice(detailVM.effectiveLow24h, currencyCode: detailVM.effectiveCurrency.uppercased()))")
+                Text("24-Stunden-Höchstpreis: \(CurrencyFormatter.formatPrice(detailVM.effectiveHigh24h, currencyCode: detailVM.effectiveCurrency.uppercased()))")
+                Text("24-Stunden-Tiefstpreis: \(CurrencyFormatter.formatPrice(detailVM.effectiveLow24h, currencyCode: detailVM.effectiveCurrency.uppercased()))")
                 
-                // Integriere den Chart, wobei effectiveCurrency als vsCurrency übergeben wird
+                // Chart anzeigen
                 PriceChartView(coinId: coin.id, vsCurrency: detailVM.effectiveCurrency)
                 
                 Button(action: {
@@ -72,5 +74,7 @@ struct CryptoDetailView: View {
     )
     CryptoDetailView(coin: sampleCrypto, currency: "eur", applyConversion: true)
         .environmentObject(CryptoListViewModel())
+        .environmentObject(FavoritesManager())
+        .environmentObject(SettingsViewModel())
         .environmentObject(FavoritesManager())
 }

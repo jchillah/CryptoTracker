@@ -6,58 +6,64 @@
 //
 
 import SwiftUI
+import FirebaseFirestore
 
 struct CryptoListView: View {
-    @StateObject private var viewModel = CryptoListViewModel()
-    
+    @EnvironmentObject var authViewModel: AuthViewModel
+    @EnvironmentObject var favoritesViewModel: FavoritesViewModel
+    @EnvironmentObject var cryptoViewModel: CryptoListViewModel
+    @EnvironmentObject var favoritesManager: FavoritesManager
+
     var body: some View {
-        NavigationView {
-            VStack {
-                Text(viewModel.statusMessage)
-                    .foregroundColor(viewModel.statusMessage.contains("Fehler") ? .red : .gray)
-                    .padding()
-                
-                Picker("Währung", selection: $viewModel.selectedCurrency) {
-                    ForEach(["usd", "eur", "gbp"], id: \.self) { currency in
-                        Text(currency.uppercased()).tag(currency)
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 16) {
+                    if let lastUpdate = cryptoViewModel.lastUpdate {
+                        Text("Update: \(DateFormatterUtil.formatDateToGermanStyle(lastUpdate))")
+                            .font(.caption)
+                            .foregroundColor(.gray)
                     }
-                }
-                .pickerStyle(SegmentedPickerStyle())
-                .padding()
-                .onChange(of: viewModel.selectedCurrency) { oldValue, newValue in
-                    print("Währung geändert von \(oldValue) zu \(newValue)")
-                    Task {
-                        await viewModel.fetchCoins()
+                    
+                    Text(cryptoViewModel.statusMessage)
+                        .foregroundColor(cryptoViewModel.statusMessage.contains("Fehler") ? .red : .gray)
+                        .padding(.horizontal)
+                    
+                    Picker("Währung", selection: $cryptoViewModel.selectedCurrency) {
+                        ForEach(["usd", "eur", "gbp"], id: \.self) { currency in
+                            Text(currency.uppercased()).tag(currency)
+                        }
                     }
-                }
-                
-                if viewModel.coins.isEmpty {
-                    Text("Keine Daten verfügbar.")
-                        .foregroundColor(.gray)
-                        .padding()
-                } else {
-                    List(viewModel.coins) { coin in
-                        NavigationLink(destination: CryptoDetailView(coin: coin)
-                                        .environmentObject(viewModel)) {
-                            HStack {
-                                AsyncImage(url: URL(string: coin.image)) { image in
-                                    image.resizable()
-                                        .scaledToFit()
-                                        .frame(width: 32, height: 32)
-                                } placeholder: {
-                                    ProgressView()
-                                }
-                                Text(coin.name)
-                                Spacer()
-                                Text(formatPrice(coin.currentPrice, currencyCode: viewModel.selectedCurrency.uppercased()))
-                                    .foregroundColor(.gray)
+                    .pickerStyle(SegmentedPickerStyle())
+                    .padding(.horizontal)
+                    .onChange(of: cryptoViewModel.selectedCurrency) { _, _ in
+                        Task { await cryptoViewModel.fetchCoins() }
+                    }
+                    
+                    if cryptoViewModel.coins.isEmpty {
+                        Text("Keine Daten verfügbar.")
+                            .foregroundColor(.gray)
+                            .padding()
+                    } else {
+                        ForEach(cryptoViewModel.coins) { coin in
+                            NavigationLink(
+                                destination: CryptoDetailView(
+                                    coin: coin,
+                                    currency: cryptoViewModel.selectedCurrency, 
+                                    applyConversion: true, 
+                                    viewModel: _cryptoViewModel
+                                )
+                                .environmentObject(cryptoViewModel)
+                                .environmentObject(favoritesViewModel)
+                            ) {
+                                CryptoRowView(coin: coin, currency: cryptoViewModel.selectedCurrency)
                             }
                         }
                     }
-                    .refreshable {
-                        await viewModel.fetchCoins()
-                    }
                 }
+                .padding()
+            }
+            .refreshable {
+                await cryptoViewModel.fetchCoins()
             }
             .navigationTitle("Krypto-Preise")
         }
@@ -66,4 +72,8 @@ struct CryptoListView: View {
 
 #Preview {
     CryptoListView()
+        .environmentObject(AuthViewModel())
+        .environmentObject(CryptoListViewModel())
+        .environmentObject(FavoritesViewModel())
+        .environmentObject(FavoritesManager())
 }
