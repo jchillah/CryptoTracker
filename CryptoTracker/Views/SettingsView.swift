@@ -48,13 +48,13 @@ struct SettingsView: View {
                             await viewModel.signOut()
                         }
                     }
-                    .foregroundColor(.red)
+                    .foregroundStyle(.red)
                 }
                 
                 if let message = viewModel.updateMessage {
                     Section {
                         Text(message)
-                            .foregroundColor(.blue)
+                            .foregroundStyle(.blue)
                     }
                 }
             }

@@ -30,7 +30,7 @@ struct AuthView: View {
             
             if let error = viewModel.errorMessage {
                 Text(error)
-                    .foregroundColor(.red)
+                    .foregroundStyle(.red)
                     .padding(.horizontal)
             }
             
@@ -47,7 +47,7 @@ struct AuthView: View {
                     .frame(maxWidth: .infinity)
                     .padding()
                     .background(Color.blue)
-                    .foregroundColor(.white)
+                    .foregroundStyle(.white)
                     .cornerRadius(8)
             }
             .padding(.horizontal)

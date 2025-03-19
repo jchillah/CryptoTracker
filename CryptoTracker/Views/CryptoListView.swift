@@ -21,11 +21,11 @@ struct CryptoListView: View {
                     if let lastUpdate = cryptoViewModel.lastUpdate {
                         Text("Update: \(DateFormatterUtil.formatDateToGermanStyle(lastUpdate))")
                             .font(.caption)
-                            .foregroundColor(.gray)
+                            .foregroundStyle(.gray)
                     }
                     
                     Text(cryptoViewModel.statusMessage)
-                        .foregroundColor(cryptoViewModel.statusMessage.contains("Fehler") ? .red : .gray)
+                        .foregroundStyle(cryptoViewModel.statusMessage.contains("Fehler") ? .red : .gray)
                         .padding(.horizontal)
                     
                     Picker("Währung", selection: $cryptoViewModel.selectedCurrency) {
@@ -41,7 +41,7 @@ struct CryptoListView: View {
                     
                     if cryptoViewModel.coins.isEmpty {
                         Text("Keine Daten verfügbar.")
-                            .foregroundColor(.gray)
+                            .foregroundStyle(.gray)
                             .padding()
                     } else {
                         ForEach(cryptoViewModel.coins) { coin in

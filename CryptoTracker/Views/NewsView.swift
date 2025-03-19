@@ -11,16 +11,16 @@ struct NewsView: View {
     @StateObject private var viewModel = NewsViewModel()
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             Group {
                 if viewModel.isLoading {
                     ProgressView("Lade News…")
                 } else if let errorMessage = viewModel.errorMessage {
                     Text("Fehler: \(errorMessage)")
-                        .foregroundColor(.red)
+                        .foregroundStyle(.red)
                 } else if viewModel.articles.isEmpty {
                     Text("Keine News verfügbar.")
-                        .foregroundColor(.gray)
+                        .foregroundStyle(.gray)
                 } else {
                     List(viewModel.articles) { article in
                         NavigationLink(destination: NewsDetailView(article: article)) {
@@ -31,7 +31,7 @@ struct NewsView: View {
                                     Text(description)
                                         .font(.subheadline)
                                         .lineLimit(2)
-                                        .foregroundColor(.gray)
+                                        .foregroundStyle(.gray)
                                 }
                             }
                         }

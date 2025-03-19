@@ -32,7 +32,7 @@ struct NewsDetailView: View {
                 }
                 Text("Veröffentlicht am: \(article.publishedAt, formatter: dateFormatter)")
                     .font(.footnote)
-                    .foregroundColor(.gray)
+                    .foregroundStyle(.gray)
                 if let url = URL(string: article.url) {
                 Link("Weiterlesen", destination: url)
                 .font(.headline)

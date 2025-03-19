@@ -16,7 +16,6 @@ struct FavoritesView: View {
         viewModel.conversionFactor(for: favoritesCurrency)
     }
     
-    // Filtere alle Original-Coins anhand der Favoriten-IDs
     var favoriteCoins: [Crypto] {
         viewModel.allOriginalCoins.filter { favoritesViewModel.favoriteIDs.contains($0.id) }
     }
@@ -37,7 +36,7 @@ struct FavoritesView: View {
                 Group {
                     if favoriteCoins.isEmpty {
                         Text("Keine Favoriten vorhanden.")
-                            .foregroundColor(.gray)
+                            .foregroundStyle(.gray)
                             .padding()
                     } else {
                         List(favoriteCoins) { coin in
@@ -47,7 +46,7 @@ struct FavoritesView: View {
                                     currency: favoritesCurrency,
                                     applyConversion: true
                                 )
-                                .environmentObject(viewModel)            // Hier als EnvironmentObject
+                                .environmentObject(viewModel)
                                 .environmentObject(favoritesViewModel)
                             ) {
                                 HStack {
@@ -59,9 +58,10 @@ struct FavoritesView: View {
                                         ProgressView()
                                     }
                                     Text(coin.name)
+                                        .foregroundStyle(Color.priceChangeColor(for: coin.priceChangePercentage24h))
                                     Spacer()
                                     Text(CurrencyFormatter.formatPrice(coin.currentPrice * conversionFactor, currencyCode: favoritesCurrency.uppercased()))
-                                        .foregroundColor(.gray)
+                                        .foregroundStyle(.gray)
                                 }
                             }
                         }

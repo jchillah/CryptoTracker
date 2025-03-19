@@ -26,9 +26,10 @@ struct CryptoRowView: View {
                 ProgressView()
             }
             Text(coin.name)
+                .foregroundStyle(Color.priceChangeColor(for: coin.priceChangePercentage24h))
             Spacer()
             Text(CurrencyFormatter.formatPrice(coin.currentPrice, currencyCode: currency.uppercased()))
-                .foregroundColor(.gray)
+                .foregroundStyle(.gray)
         }
         .padding(.horizontal)
     }
