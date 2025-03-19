@@ -7,9 +7,9 @@
 
 import Foundation
 
-class PriceHistoryService {
+class ChartDataService {
     
-    func fetchPriceHistory(for coinId: String, vsCurrency: String) async throws -> [ChartData] {
+    func fetchChartData(for coinId: String, vsCurrency: String) async throws -> [ChartData] {
         let urlString = "https://api.coingecko.com/api/v3/coins/\(coinId)/market_chart?vs_currency=\(vsCurrency)&days=365"
         guard let url = URL(string: urlString) else {
             throw URLError(.badURL)
@@ -17,26 +17,38 @@ class PriceHistoryService {
         
         do {
             let (data, response) = try await URLSession.shared.data(from: url)
-            guard let httpResponse = response as? HTTPURLResponse,
-                  (200...299).contains(httpResponse.statusCode) else {
+            guard let httpResponse = response as? HTTPURLResponse else {
                 throw URLError(.badServerResponse)
             }
+            
+            if httpResponse.statusCode == 429 {
+                print("⚠️ API-Limit erreicht (429). Wartezeit empfohlen.")
+                throw NSError(domain: "ChartDataService", code: 429, userInfo: [NSLocalizedDescriptionKey: "Abfrage-Limit erreicht, bitte versuchen Sie es in einer Minute erneut."])
+            }
+            
+            guard (200...299).contains(httpResponse.statusCode) else {
+                throw URLError(.badServerResponse)
+            }
+            
             saveDataToLocalJSON(data: data, for: coinId, vsCurrency: vsCurrency)
-            return try parsePriceHistoryData(data)
+            return try parseChartData(data)
         } catch {
             if let localData = loadLocalJSON(for: coinId, vsCurrency: vsCurrency) {
                 do {
-                    return try parsePriceHistoryData(localData)
+                    return try parseChartData(localData)
                 } catch {
                     print("Fehler beim Parsen der lokalen JSON-Daten: \(error)")
                 }
+            }
+            if let urlError = error as? URLError, urlError.code == .badServerResponse {
+                throw NSError(domain: "ChartDataService", code: -1011, userInfo: [NSLocalizedDescriptionKey: "Abfrage-Limit erreicht, bitte versuchen Sie es in einer Minute erneut."])
             }
             print("Kein lokaler Cache verfügbar. Rückgabe eines leeren Arrays. Fehler: \(error)")
             return []
         }
     }
     
-    private func parsePriceHistoryData(_ data: Data) throws -> [ChartData] {
+    private func parseChartData(_ data: Data) throws -> [ChartData] {
         let decoder = JSONDecoder()
         let historyResponse = try decoder.decode(ChartHistoryResponse.self, from: data)
         let priceData: [ChartData] = historyResponse.prices.compactMap { array in

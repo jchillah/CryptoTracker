@@ -44,7 +44,7 @@ class CryptoListViewModel: ObservableObject {
 
     func fetchCoins() async {
         guard shouldFetch() else {
-            statusMessage = "Daten aus dem Cache verwendet."
+            statusMessage = "Keine neuen Daten verfügbar.(letztes Update: \(DateFormatterUtil.formatDateToGermanStyle(Date())))"
             applyConversionRate()
             return
         }
@@ -55,7 +55,7 @@ class CryptoListViewModel: ObservableObject {
             originalCoins = fetchedCoins
             coins = fetchedCoins
             lastFetchedAt = Date()
-            statusMessage = "Daten aktualisiert."
+            statusMessage = "Daten aktualisiert (letztes Update: \(DateFormatterUtil.formatDateToGermanStyle(Date())))"
         } catch {
             statusMessage = "Fehler beim Laden der Daten: \(error.localizedDescription)"
         }

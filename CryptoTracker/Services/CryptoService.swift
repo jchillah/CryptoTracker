@@ -19,12 +19,28 @@ class CryptoService {
             throw URLError(.badURL)
         }
         
-        let (data, response) = try await URLSession.shared.data(from: url)
-        guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
-            throw URLError(.badServerResponse)
+        do {
+            let (data, response) = try await URLSession.shared.data(from: url)
+            guard let httpResponse = response as? HTTPURLResponse else {
+                throw URLError(.badServerResponse)
+            }
+            
+            if httpResponse.statusCode == 429 {
+                print("⚠️ API-Limit erreicht (429). Wartezeit empfohlen.")
+                throw NSError(domain: "CryptoService", code: 429, userInfo: [NSLocalizedDescriptionKey: "Abfrage-Limit erreicht, bitte versuchen Sie es in einer Minute erneut."])
+            }
+            
+            guard (200...299).contains(httpResponse.statusCode) else {
+                throw URLError(.badServerResponse)
+            }
+            
+            return try JSONDecoder().decode([Crypto].self, from: data)
+        } catch {
+            if let urlError = error as? URLError, urlError.code == .badServerResponse {
+                throw NSError(domain: "CryptoService", code: -1011, userInfo: [NSLocalizedDescriptionKey: "Abfrage-Limit erreicht, bitte versuchen Sie es in einer Minute erneut."])
+            }
+            throw error
         }
-        
-        return try JSONDecoder().decode([Crypto].self, from: data)
     }
     
     func fetchExchangeRates() async throws {
@@ -32,13 +48,26 @@ class CryptoService {
             throw URLError(.badURL)
         }
         
-        let (data, response) = try await URLSession.shared.data(from: url)
-        guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
-            throw URLError(.badServerResponse)
+        do {
+            let (data, response) = try await URLSession.shared.data(from: url)
+            guard let httpResponse = response as? HTTPURLResponse else {
+                throw URLError(.badServerResponse)
+            }
+            
+            if httpResponse.statusCode == 429 {
+                print("⚠️ API-Limit erreicht (429). Wartezeit empfohlen.")
+                throw NSError(domain: "CryptoService", code: 429, userInfo: [NSLocalizedDescriptionKey: "Abfrage-Limit erreicht, bitte versuchen Sie es in einer Minute erneut."])
+            }
+            
+            guard (200...299).contains(httpResponse.statusCode) else {
+                throw URLError(.badServerResponse)
+            }
+            
+            let ratesResponse = try JSONDecoder().decode(ExchangeRatesResponse.self, from: data)
+            exchangeRates = ratesResponse.rates.mapValues { $0.value }
+        } catch {
+            throw error
         }
-        
-        let ratesResponse = try JSONDecoder().decode(ExchangeRatesResponse.self, from: data)
-        exchangeRates = ratesResponse.rates.mapValues { $0.value }
     }
     
     func getConversionRate(for currency: String) -> Double {

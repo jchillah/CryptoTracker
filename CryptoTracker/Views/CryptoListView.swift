@@ -40,7 +40,7 @@ struct CryptoListView: View {
                     }
                     
                     if cryptoViewModel.coins.isEmpty {
-                        Text("Keine Daten verfügbar.")
+                        Text("Keine Daten verfügbar, versuche es bitte in einer Minute erneut.")
                             .foregroundStyle(.gray)
                             .padding()
                     } else {

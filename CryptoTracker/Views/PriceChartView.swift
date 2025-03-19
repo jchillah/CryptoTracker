@@ -1,10 +1,3 @@
-//
-//  PriceChartView.swift
-//  CryptoTracker
-//
-//  Created by Michael Winkler on 12.03.25.
-//
-
 import SwiftUI
 import Charts
 
@@ -32,28 +25,35 @@ struct PriceChartView: View {
                 ProgressView("Lade Chart...")
             } else if let errorMessage = viewModel.errorMessage {
                 Text("Fehler: \(errorMessage)")
-                    .foregroundStyle(.red)
+                    .foregroundColor(.red)
             } else {
                 let filteredData = viewModel.filteredData(for: selectedDuration)
-                Chart {
-                    ForEach(filteredData) { dataPoint in
-                        LineMark(
-                            x: .value("Datum", dataPoint.date),
-                            y: .value("Preis", dataPoint.price)
-                        )
+                if filteredData.isEmpty {
+                    Text("Keine Daten verfügbar, versuche es bitte in einer Minute erneut.")
+                } else {
+                    Chart {
+                        ForEach(filteredData) { dataPoint in
+                            LineMark(
+                                x: .value("Datum", dataPoint.date),
+                                y: .value("Preis", dataPoint.price)
+                            )
+                        }
                     }
+                    .chartYAxisLabel("Preis")
+                    .frame(height: 200)
+                    .padding()
                 }
-                .chartYAxisLabel("Preis")
-                .frame(height: 200)
-                .padding()
             }
         }
         .onAppear {
             Task {
-                await viewModel.fetchPriceHistory(for: coinId, vsCurrency: vsCurrency)
+                await viewModel.fetchPriceHistory(for: coinId)
             }
         }
-        .onChange(of: selectedDuration) { oldValue, newValue in
+        .onChange(of: selectedDuration) { _, _ in
+            Task {
+                await viewModel.fetchPriceHistory(for: coinId)
+            }
         }
     }
 }
