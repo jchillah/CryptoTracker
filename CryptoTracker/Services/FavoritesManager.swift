@@ -7,9 +7,11 @@
 
 import Foundation
 import FirebaseAuth
+import Combine
 
 @MainActor
 class FavoritesManager: ObservableObject {
+    static let shared = FavoritesManager()
     @Published var favoriteIDs: Set<String> = []
     
     private let repository = FavoritesRepository.shared
@@ -45,19 +47,18 @@ class FavoritesManager: ObservableObject {
     }
     
     func toggleFavorite(coin: Crypto) {
-        guard let userID = userID, let email = userEmail else {
-            print("Kein angemeldeter Benutzer oder keine Email gefunden.")
-            return
+            guard let userID = userID, let email = userEmail else {
+                print("Kein angemeldeter Benutzer oder keine Email gefunden.")
+                return
+            }
+
+            if favoriteIDs.contains(coin.id) {
+                favoriteIDs.remove(coin.id)
+            } else {
+                favoriteIDs.insert(coin.id)
+            }
+            persistFavorites(for: userID, email: email)
         }
-        
-        if favoriteIDs.contains(coin.id) {
-            favoriteIDs.remove(coin.id)
-        } else {
-            favoriteIDs.insert(coin.id)
-        }
-        persistFavorites(for: userID, email: email)
-        NotificationCenter.default.post(name: .favoritesDidChange, object: nil)
-    }
     
     private func persistFavorites(for userID: String, email: String) {
         Task {
