@@ -26,7 +26,7 @@ struct MainView: View {
                     Label("Favoriten", systemImage: "star.fill")
                 }
                 .environmentObject(favoritesViewModel)
-
+            
             NewsView()
                 .tabItem {
                     Label("News", systemImage: "newspaper.fill")
@@ -54,4 +54,3 @@ struct MainView: View {
         .environmentObject(FavoritesManager())
         .modelContainer(container)
 }
-

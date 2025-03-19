@@ -8,7 +8,7 @@
 import SwiftUI
 import SwiftData
 
-struct CryptoRowView: View { 
+struct CryptoRowView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
     @EnvironmentObject var favoritesViewModel: FavoritesViewModel
     @EnvironmentObject var cryptoViewModel: CryptoListViewModel    
@@ -38,6 +38,7 @@ struct CryptoRowView: View {
 }
 
 #Preview {
+    let container = try! ModelContainer(for: Schema([CryptoEntity.self, ChartDataEntity.self]))
     let sampleCrypto = Crypto(
         id: "bitcoin",
         symbol: "btc",
@@ -53,7 +54,6 @@ struct CryptoRowView: View {
         priceChangePercentage24h: 3.07518,
         lastUpdated: "2025-03-12T13:36:39.814Z"
     )
-    let container = try! ModelContainer(for: Schema([CryptoEntity.self, ChartDataEntity.self]))
     CryptoRowView(coin: sampleCrypto, currency: "EUR")
         .environmentObject(AuthViewModel())
         .environmentObject(FavoritesViewModel())
@@ -61,4 +61,3 @@ struct CryptoRowView: View {
         .environmentObject(FavoritesManager())
         .modelContainer(container)
 }
-

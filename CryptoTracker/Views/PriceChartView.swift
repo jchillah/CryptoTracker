@@ -1,5 +1,5 @@
 //
-//  PriceHistoryService.swift
+//  PriceChartView.swift
 //  CryptoTracker
 //
 //  Created by Michael Winkler on 12.03.25.
@@ -17,7 +17,6 @@ struct PriceChartView: View {
     @State private var selectedDuration: ChartDuration = .week
     @Environment(\.modelContext) var modelContext: ModelContext
 
-    // Initialisiere den ViewModel mithilfe des übergebenen ModelContext
     init(coinId: String, vsCurrency: String, modelContext: ModelContext) {
         self.coinId = coinId
         self.vsCurrency = vsCurrency

@@ -11,7 +11,7 @@ import SwiftData
 struct AppView: View {
     @EnvironmentObject private var authViewModel: AuthViewModel
     @EnvironmentObject private var favoritesViewModel: FavoritesViewModel
-    @EnvironmentObject private var cryptoListViewModel: CryptoListViewModel
+    @EnvironmentObject private var cryptoViewModel: CryptoListViewModel
     @EnvironmentObject private var settingsViewModel: SettingsViewModel
     @EnvironmentObject private var favoritesManager: FavoritesManager
     
@@ -23,7 +23,7 @@ struct AppView: View {
                 MainView()
                     .environmentObject(authViewModel)
                     .environmentObject(favoritesViewModel)
-                    .environmentObject(cryptoListViewModel)
+                    .environmentObject(cryptoViewModel)
                     .environmentObject(settingsViewModel)
                     .environmentObject(favoritesManager)
             }
@@ -41,4 +41,3 @@ struct AppView: View {
         .environmentObject(FavoritesManager())
         .modelContainer(container)
 }
-

@@ -49,9 +49,8 @@ struct CryptoListView: View {
                             NavigationLink(
                                 destination: CryptoDetailView(
                                     coin: coin,
-                                    currency: cryptoViewModel.selectedCurrency, 
-                                    applyConversion: true, 
-                                    viewModel: _cryptoViewModel
+                                    currency: cryptoViewModel.selectedCurrency,
+                                    applyConversion: true
                                 )
                                 .environmentObject(cryptoViewModel)
                                 .environmentObject(favoritesViewModel)

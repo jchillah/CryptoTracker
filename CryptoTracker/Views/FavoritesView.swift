@@ -46,8 +46,7 @@ struct FavoritesView: View {
                                 destination: CryptoDetailView(
                                     coin: coin,
                                     currency: favoritesCurrency,
-                                    applyConversion: true,
-                                    modelContext: _modelContext
+                                    applyConversion: true
                                 )
                                 .environmentObject(viewModel)
                                 .environmentObject(favoritesViewModel)
@@ -74,9 +73,11 @@ struct FavoritesView: View {
                 .navigationTitle("Favoriten")
             }
             .onAppear {
-                Task {
-                    favoritesViewModel.loadFavorites()
-                }
+                Task { favoritesViewModel.loadFavorites() }
+            }
+            // Hier: Auf die Notification reagieren und Favoriten neu laden
+            .onReceive(NotificationCenter.default.publisher(for: .favoritesDidChange)) { _ in
+                Task { favoritesViewModel.loadFavorites() }
             }
         }
     }
@@ -89,4 +90,3 @@ struct FavoritesView: View {
         .environmentObject(CryptoListViewModel(modelContext: container.mainContext))
         .modelContainer(container)
 }
-

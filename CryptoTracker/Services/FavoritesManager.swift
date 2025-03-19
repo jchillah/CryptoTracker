@@ -56,6 +56,7 @@ class FavoritesManager: ObservableObject {
             favoriteIDs.insert(coin.id)
         }
         persistFavorites(for: userID, email: email)
+        NotificationCenter.default.post(name: .favoritesDidChange, object: nil)
     }
     
     private func persistFavorites(for userID: String, email: String) {
@@ -72,4 +73,8 @@ class FavoritesManager: ObservableObject {
     func isFavorite(coin: Crypto) -> Bool {
         favoriteIDs.contains(coin.id)
     }
+}
+
+extension Notification.Name {
+    static let favoritesDidChange = Notification.Name("favoritesDidChange")
 }
