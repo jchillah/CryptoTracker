@@ -9,7 +9,7 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>de.appakademie.CryptoTracker</string>
+	<string>de.App-Akademie.CryptoTracker</string>
 	<key>PROJECT_ID</key>
 	<string>cryptotracker-21b36</string>
 	<key>STORAGE_BUCKET</key>
@@ -25,6 +25,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:1026045586673:ios:39be663194e60915cc4d50</string>
+	<string>1:1026045586673:ios:8f9ab741dc3ca1a9cc4d50</string>
 </dict>
 </plist>

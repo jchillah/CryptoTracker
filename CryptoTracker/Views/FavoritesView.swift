@@ -73,11 +73,9 @@ struct FavoritesView: View {
                 .navigationTitle("Favoriten")
             }
             .onAppear {
-                Task { favoritesViewModel.loadFavorites() }
-            }
-            // Hier: Auf die Notification reagieren und Favoriten neu laden
-            .onReceive(NotificationCenter.default.publisher(for: .favoritesDidChange)) { _ in
-                Task { favoritesViewModel.loadFavorites() }
+                Task { 
+                    favoritesViewModel.loadFavorites() 
+                }
             }
         }
     }

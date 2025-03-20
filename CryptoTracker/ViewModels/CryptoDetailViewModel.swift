@@ -14,7 +14,6 @@ class CryptoDetailViewModel: ObservableObject {
     let applyConversion: Bool
     private let parentViewModel: CryptoListViewModel
     private let fixedCurrency: String?
-    // Optional: Speichere den ModelContext, falls benötigt
     private let modelContext: ModelContext
 
     init(coin: Crypto, viewModel: CryptoListViewModel, currency: String? = nil, applyConversion: Bool = false, modelContext: ModelContext) {

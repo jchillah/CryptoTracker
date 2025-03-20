@@ -14,47 +14,28 @@ class FavoritesRepository {
     
     private init() { }
     
-    // Fügt einen einzelnen Favoriten hinzu (als Dictionary)
-    func addFavorite(coinId: String, for userId: String, userEmail: String) async throws {
-        let newFavorite: [String: Any] = [
-            "email": userEmail,
-            "coinId": coinId
-        ]
-        try await db.collection("users").document(userId).updateData([
-            "favorites": FieldValue.arrayUnion([newFavorite])
-        ])
-    }
-    
-    // Aktualisiert das gesamte Favoriten-Array (ersetzt vorhandene Einträge)
     func updateFavorites(favorites: Set<String>, for userId: String, userEmail: String) async throws {
-        let favoritesArray = favorites.map { coinId in
-            return ["email": userEmail, "coinId": coinId]
-        }
+        let favoritesArray = Array(favorites)
         try await db.collection("users").document(userId).setData([
             "favorites": favoritesArray,
             "email": userEmail
         ], merge: true)
     }
     
-    // Aktualisiert die im Dokument gespeicherte E-Mail-Adresse
     func updateEmail(newEmail: String, for userId: String) async throws {
         try await db.collection("users").document(userId).updateData([
             "email": newEmail
         ])
     }
     
-    // Lädt das Favoriten-Array und extrahiert die Coin-IDs
     func fetchFavorites(for userId: String) async throws -> Set<String> {
         let document = try await db.collection("users").document(userId).getDocument()
-        if let data = document.data(),
-           let favArray = data["favorites"] as? [[String: Any]] {
-            let coinIds = favArray.compactMap { $0["coinId"] as? String }
-            return Set(coinIds)
+        if let data = document.data(), let favArray = data["favorites"] as? [String] {
+            return Set(favArray)
         }
         return []
     }
     
-    // Löscht das gesamte Favoriten-Feld
     func deleteFavorites(for userId: String) async throws {
         try await db.collection("users").document(userId).updateData(["favorites": FieldValue.delete()])
     }

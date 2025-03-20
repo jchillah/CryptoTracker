@@ -5,11 +5,13 @@
 //  Created by Michael Winkler on 17.03.25.
 //
 
-
 import SwiftUI
 
 struct AuthView: View {
     @StateObject var viewModel: AuthViewModel
+    @State private var confirmPassword: String = ""
+    @State private var showPassword: Bool = false
+    @State private var showConfirmPassword: Bool = false
     
     var body: some View {
         VStack(spacing: 20) {
@@ -24,9 +26,11 @@ struct AuthView: View {
                 .disableAutocorrection(true)
                 .padding(.horizontal)
             
-            SecureField("Passwort", text: $viewModel.password)
-                .textFieldStyle(RoundedBorderTextFieldStyle())
-                .padding(.horizontal)
+            PasswordFieldView(title: "Passwort", text: $viewModel.password, showPassword: $showPassword)
+            
+            if viewModel.isRegistering {
+                PasswordFieldView(title: "Passwort bestätigen", text: $confirmPassword, showPassword: $showConfirmPassword)
+            }
             
             if let error = viewModel.errorMessage {
                 Text(error)
@@ -37,7 +41,11 @@ struct AuthView: View {
             Button(action: {
                 Task {
                     if viewModel.isRegistering {
-                        await viewModel.register()
+                        if viewModel.password == confirmPassword {
+                            await viewModel.register()
+                        } else {
+                            viewModel.errorMessage = "Passwörter stimmen nicht überein"
+                        }
                     } else {
                         await viewModel.signIn()
                     }
@@ -56,6 +64,7 @@ struct AuthView: View {
                 withAnimation {
                     viewModel.isRegistering.toggle()
                     viewModel.errorMessage = nil
+                    confirmPassword = ""
                 }
             }) {
                 Text(viewModel.isRegistering ?
@@ -85,4 +94,3 @@ struct AuthView: View {
 #Preview {
     AuthView(viewModel: AuthViewModel())
 }
-

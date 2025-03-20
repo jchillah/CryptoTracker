@@ -23,7 +23,6 @@ class PriceChartViewModel: ObservableObject {
     
     private var service: ChartDataService
     
-    // Initialisiere den Service mit dem ModelContext, der z.B. aus dem SwiftData-Container kommt
     init(modelContext: ModelContext) {
         self.service = ChartDataService(modelContext: modelContext)
     }

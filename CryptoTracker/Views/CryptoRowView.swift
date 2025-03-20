@@ -12,7 +12,6 @@ struct CryptoRowView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
     @EnvironmentObject var favoritesViewModel: FavoritesViewModel
     @EnvironmentObject var cryptoViewModel: CryptoListViewModel    
-    @EnvironmentObject var favoritesManager: FavoritesManager
     @Environment(\.modelContext) var modelContext: ModelContext
     
     let coin: Crypto
@@ -58,6 +57,5 @@ struct CryptoRowView: View {
         .environmentObject(AuthViewModel())
         .environmentObject(FavoritesViewModel())
         .environmentObject(CryptoListViewModel(modelContext: container.mainContext))
-        .environmentObject(FavoritesManager())
         .modelContainer(container)
 }

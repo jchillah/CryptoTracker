@@ -37,7 +37,6 @@ class CryptoEntity {
         self.low24h = crypto.low24h
         self.priceChange24h = crypto.priceChange24h
         self.priceChangePercentage24h = crypto.priceChangePercentage24h
-        // Annahme: lastUpdated ist ein ISO8601-String
         self.lastUpdated = ISO8601DateFormatter().date(from: crypto.lastUpdated) ?? Date()
     }
 }

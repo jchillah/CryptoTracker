@@ -19,7 +19,6 @@ struct CryptoTrackerApp: App {
     @StateObject private var authViewModel = AuthViewModel()
     @StateObject private var favoritesViewModel = FavoritesViewModel()
     @StateObject private var cryptoListViewModel: CryptoListViewModel
-    @StateObject private var favoritesManager = FavoritesManager()
     @StateObject private var settingsViewModel = SettingsViewModel()
     @StateObject private var priceChartViewModel: PriceChartViewModel
 
@@ -45,7 +44,6 @@ struct CryptoTrackerApp: App {
                 .environmentObject(authViewModel)
                 .environmentObject(favoritesViewModel)
                 .environmentObject(cryptoListViewModel)
-                .environmentObject(favoritesManager)
                 .environmentObject(settingsViewModel)
                 .environmentObject(priceChartViewModel)
                 .modelContainer(container)

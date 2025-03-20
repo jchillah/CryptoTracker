@@ -6,28 +6,55 @@
 //
 
 import Foundation
+import FirebaseAuth
 
 @MainActor
 class FavoritesViewModel: ObservableObject {
     @Published var favoriteIDs: Set<String> = []
-    
-    private let favoritesManager = FavoritesManager()
     
     init() {
         loadFavorites()
     }
     
     func loadFavorites() {
-        favoritesManager.loadFavorites()
-        self.favoriteIDs = favoritesManager.favoriteIDs
+        guard let userID = Auth.auth().currentUser?.uid else {
+            print("Kein angemeldeter Benutzer oder keine Email gefunden.")
+            return
+        }
+        
+        Task {
+            do {
+                let fetched = try await FavoritesRepository.shared.fetchFavorites(for: userID)
+                self.favoriteIDs = fetched
+            } catch {
+                print("Fehler beim Laden der Favoriten: \(error)")
+            }
+        }
     }
     
     func toggleFavorite(coin: Crypto) {
-        favoritesManager.toggleFavorite(coin: coin)
-        self.favoriteIDs = favoritesManager.favoriteIDs
+        guard let userID = Auth.auth().currentUser?.uid,
+              let email = Auth.auth().currentUser?.email else {
+            print("Kein angemeldeter Benutzer oder keine Email gefunden.")
+            return
+        }
+        
+        if favoriteIDs.contains(coin.id) {
+            favoriteIDs.remove(coin.id)
+        } else {
+            favoriteIDs.insert(coin.id)
+        }
+        
+        Task {
+            do {
+                try await FavoritesRepository.shared.updateFavorites(favorites: favoriteIDs, for: userID, userEmail: email)
+            } catch {
+                print("Fehler beim Speichern der Favoriten: \(error)")
+            }
+        }
     }
     
     func isFavorite(coin: Crypto) -> Bool {
-        favoritesManager.isFavorite(coin: coin)
+        return favoriteIDs.contains(coin.id)
     }
 }

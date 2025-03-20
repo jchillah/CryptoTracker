@@ -8,7 +8,6 @@
 import Foundation
 
 struct DateFormatterUtil {
-    /// Wandelt ein `Date`-Objekt in das deutsche Datumsformat "dd.MM.yyyy, HH:mm" um.
     static func formatDateToGermanStyle(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "dd.MM.yyyy, HH:mm" // Tag.Monat.Jahr, Stunden:Minuten

@@ -13,7 +13,6 @@ struct AppView: View {
     @EnvironmentObject private var favoritesViewModel: FavoritesViewModel
     @EnvironmentObject private var cryptoViewModel: CryptoListViewModel
     @EnvironmentObject private var settingsViewModel: SettingsViewModel
-    @EnvironmentObject private var favoritesManager: FavoritesManager
     
     var body: some View {
         Group {
@@ -25,7 +24,6 @@ struct AppView: View {
                     .environmentObject(favoritesViewModel)
                     .environmentObject(cryptoViewModel)
                     .environmentObject(settingsViewModel)
-                    .environmentObject(favoritesManager)
             }
         }
     }
@@ -38,6 +36,5 @@ struct AppView: View {
         .environmentObject(FavoritesViewModel())
         .environmentObject(CryptoListViewModel(modelContext: container.mainContext))
         .environmentObject(SettingsViewModel())
-        .environmentObject(FavoritesManager())
         .modelContainer(container)
 }

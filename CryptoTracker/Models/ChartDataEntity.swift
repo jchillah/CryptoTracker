@@ -19,7 +19,6 @@ class ChartDataEntity: Identifiable {
         self.price = chartData.price
     }
     
-    // Umwandlung zurück in ChartData
     func toChartData() -> ChartData {
         return ChartData(date: self.date, price: self.price)
     }

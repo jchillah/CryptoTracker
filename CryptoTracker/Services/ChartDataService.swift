@@ -9,10 +9,8 @@ import Foundation
 import SwiftData
 
 class ChartDataService {
-    // Neuer Property: SwiftData ModelContext
     private var modelContext: ModelContext
 
-    // Initialisiere den Service mit dem ModelContext
     init(modelContext: ModelContext) {
         self.modelContext = modelContext
     }
@@ -38,7 +36,6 @@ class ChartDataService {
                 throw URLError(.badServerResponse)
             }
             
-            // Bestehende Funktionalität zum lokalen Speichern der JSON beibehalten
             saveDataToLocalJSON(data: data, for: coinId, vsCurrency: vsCurrency)
             let chartData = try parseChartData(data)
             
@@ -95,7 +92,6 @@ class ChartDataService {
     // MARK: - SwiftData Persistenz
     
     private func saveChartDataToDatabase(chartData: [ChartData], coinId: String, vsCurrency: String) {
-        // Optional: Vorherige Einträge für diesen coinId/ vsCurrency löschen, um Duplikate zu vermeiden
         let existing = loadChartDataFromDatabase(for: coinId, vsCurrency: vsCurrency)
         for entity in existing {
             modelContext.delete(entity)
@@ -109,8 +105,6 @@ class ChartDataService {
     }
     
     private func loadChartDataFromDatabase(for coinId: String, vsCurrency: String) -> [ChartDataEntity] {
-        // Für dieses Beispiel werden alle ChartDataEntity geladen.
-        // In einer echten App solltest du nach coinId und vsCurrency filtern (z.B. über zusätzliche Attribute).
         let fetchDescriptor = FetchDescriptor<ChartDataEntity>()
         return (try? modelContext.fetch(fetchDescriptor)) ?? []
     }

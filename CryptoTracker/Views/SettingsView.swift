@@ -26,6 +26,7 @@ struct SettingsView: View {
                     }
                     
                     SecureField("Neues Passwort", text: $viewModel.newPassword)
+                    SecureField("Passwort bestätigen", text: $viewModel.newPasswordConfirm)
                     Button("Passwort aktualisieren") {
                         Task {
                             await viewModel.updatePassword()
@@ -37,7 +38,7 @@ struct SettingsView: View {
                     Toggle(isOn: $isDarkMode) {
                         Text("Dark Mode")
                     }
-                    .onChange(of: isDarkMode) { oldValue, newValue in
+                    .onChange(of: isDarkMode) { _, newValue in
                         viewModel.toggleDarkMode()
                     }
                 }
@@ -51,10 +52,11 @@ struct SettingsView: View {
                     .foregroundStyle(.red)
                 }
                 
+                // Fehleranzeige in Rot
                 if let message = viewModel.updateMessage {
                     Section {
                         Text(message)
-                            .foregroundStyle(.blue)
+                            .foregroundStyle(.red)
                     }
                 }
             }

@@ -13,7 +13,6 @@ struct CryptoListView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
     @EnvironmentObject var favoritesViewModel: FavoritesViewModel
     @EnvironmentObject var cryptoViewModel: CryptoListViewModel
-    @EnvironmentObject var favoritesManager: FavoritesManager
 
     var body: some View {
         NavigationStack {
@@ -76,6 +75,5 @@ struct CryptoListView: View {
         .environmentObject(AuthViewModel())
         .environmentObject(CryptoListViewModel(modelContext: container.mainContext))
         .environmentObject(FavoritesViewModel())
-        .environmentObject(FavoritesManager())
         .modelContainer(container)
 }

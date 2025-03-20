@@ -13,7 +13,6 @@ struct MainView: View {
     @EnvironmentObject var viewModel: CryptoListViewModel
     @EnvironmentObject var favoritesViewModel: FavoritesViewModel
     @EnvironmentObject private var settingsViewModel: SettingsViewModel
-    @EnvironmentObject private var favoritesManager: FavoritesManager
     
     var body: some View {
         TabView {
@@ -39,7 +38,6 @@ struct MainView: View {
                 .environmentObject(viewModel)
                 .environmentObject(favoritesViewModel)
                 .environmentObject(settingsViewModel)
-                .environmentObject(favoritesManager)
         }
     }
 }
@@ -51,6 +49,5 @@ struct MainView: View {
         .environmentObject(CryptoListViewModel(modelContext: container.mainContext))
         .environmentObject(FavoritesViewModel())
         .environmentObject(SettingsViewModel())
-        .environmentObject(FavoritesManager())
         .modelContainer(container)
 }

@@ -14,7 +14,6 @@ struct CryptoDetailView: View {
     var applyConversion: Bool = false
     @EnvironmentObject var settings: SettingsViewModel
     @EnvironmentObject var viewModel: CryptoListViewModel
-    @EnvironmentObject var favoritesManager: FavoritesManager
     @EnvironmentObject var favoritesViewModel: FavoritesViewModel
     @Environment(\.modelContext) var modelContext: ModelContext
     
@@ -50,9 +49,9 @@ struct CryptoDetailView: View {
                 )
                 
                 Button(action: {
-                    favoritesManager.toggleFavorite(coin: coin)
+                    favoritesViewModel.toggleFavorite(coin: coin)
                 }) {
-                    let isFavorite = favoritesManager.isFavorite(coin: coin)
+                    let isFavorite = favoritesViewModel.isFavorite(coin: coin)
                     HStack {
                         Image(systemName: isFavorite ? "star.fill" : "star")
                         Text(isFavorite ? "Aus Favoriten entfernen" : "Zu Favoriten hinzufügen")
@@ -69,7 +68,6 @@ struct CryptoDetailView: View {
 }
 
 #Preview {
-    // Erstelle einen SwiftData-Container für die Vorschau
     let container = try! ModelContainer(for: Schema([CryptoEntity.self, ChartDataEntity.self]))
     let sampleCrypto = Crypto(
         id: "bitcoin",
@@ -88,7 +86,6 @@ struct CryptoDetailView: View {
     )
     CryptoDetailView(coin: sampleCrypto, currency: "eur", applyConversion: true)
         .environmentObject(CryptoListViewModel(modelContext: container.mainContext))
-        .environmentObject(FavoritesManager())
         .environmentObject(SettingsViewModel())
         .environmentObject(FavoritesViewModel())
         .modelContainer(container)
