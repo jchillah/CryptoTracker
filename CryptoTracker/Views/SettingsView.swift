@@ -1,5 +1,5 @@
 //
-//  SettingsViewModel.swift
+//  SettingsView.swift
 //  CryptoTracker
 //
 //  Created by Michael Winkler on 17.03.25.
@@ -10,6 +10,9 @@ import SwiftUI
 struct SettingsView: View {
     @StateObject var viewModel = SettingsViewModel()
     @AppStorage("isDarkMode") var isDarkMode: Bool = false
+    
+    @State private var showPassword: Bool = false
+    @State private var showConfirmPassword: Bool = false
 
     var body: some View {
         NavigationStack {
@@ -25,8 +28,9 @@ struct SettingsView: View {
                         }
                     }
                     
-                    SecureField("Neues Passwort", text: $viewModel.newPassword)
-                    SecureField("Passwort bestätigen", text: $viewModel.newPasswordConfirm)
+                    PasswordFieldView(title: "Neues Passwort", text: $viewModel.newPassword, showPassword: $showPassword)
+                    PasswordFieldView(title: "Passwort bestätigen", text: $viewModel.newPasswordConfirm, showPassword: $showConfirmPassword)
+                    
                     Button("Passwort aktualisieren") {
                         Task {
                             await viewModel.updatePassword()
@@ -52,7 +56,6 @@ struct SettingsView: View {
                     .foregroundStyle(.red)
                 }
                 
-                // Fehleranzeige in Rot
                 if let message = viewModel.updateMessage {
                     Section {
                         Text(message)

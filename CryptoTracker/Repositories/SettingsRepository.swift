@@ -32,10 +32,12 @@ class SettingsRepository {
     }
     
     func updateDarkMode(isDarkMode: Bool, for userId: String) async throws {
-        try await updateSettings(["isDarkMode": isDarkMode], for: userId)
+        let docRef = db.collection("users").document(userId)
+        try await docRef.setData(["isDarkMode": isDarkMode], merge: true)
     }
     
     func updateEmail(newEmail: String, for userId: String) async throws {
-        try await updateSettings(["email": newEmail], for: userId)
-    }
+            let docRef = db.collection("users").document(userId)
+            try await docRef.setData(["email": newEmail], merge: true)
+        }
 }

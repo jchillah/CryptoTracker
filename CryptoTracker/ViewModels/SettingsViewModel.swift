@@ -51,7 +51,7 @@ class SettingsViewModel: ObservableObject {
                 }
             }
             updateMessage = "Verifizierungs-E-Mail gesendet. Bitte bestätigen Sie Ihre neue E-Mail-Adresse."
-            
+     
             try await SettingsRepository.shared.updateEmail(newEmail: newEmail, for: uid)
             try await FavoritesRepository.shared.updateEmail(newEmail: newEmail, for: uid)
         } catch {
@@ -59,6 +59,7 @@ class SettingsViewModel: ObservableObject {
         }
         isLoading = false
     }
+
     
     func updatePassword() async {
         guard newPassword == newPasswordConfirm else {
