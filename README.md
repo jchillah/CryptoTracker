@@ -12,11 +12,7 @@ CryptoTracker ist eine iOS-App, die es Benutzern ermöglicht, Kryptowährungen i
 
 ## Klassendiagramme
 
-### CryptoListViewModel
-
 ![Klassendiagramm des CryptoListViewModel](Screenshots/KlassendiagrammCryptoListViewModel.png)
-
-### FavoritesView und FavoritesManager
 
 ![Klassendiagramm der FavoritesView und des FavoritesManager](Screenshots/KlassendiagrammFavoritesViewUndFavoritesManager.png)
 
