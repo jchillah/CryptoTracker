@@ -43,8 +43,8 @@ CryptoTracker ist eine iOS-App, die es Benutzern ermöglicht, Kryptowährungen i
 
 1. **Repository klonen:**
    ```swift
-git clone https://github.com/jchillah/CryptoTracker.git
-cd CryptoTracker
+   git clone https://github.com/jchillah/CryptoTracker.git
+   cd CryptoTracker
    ```
 2. **Xcode öffnen:**
     - Öffne die Projektdatei CryptoTracker.xcodeproj
@@ -74,7 +74,7 @@ CryptoTracker/
    ```
 
 ## Hinweise zur SwiftData-Integration
-    Die App verwendet SwiftData zur persistenten Speicherung von Daten (z. B. gespeicherte Kryptowährungsdaten oder Preishistorien). Das persistierbare Modell wird über SwiftData als **CryptoEntity** bzw. **ChartDataEntity** definiert. Im Code werden die Daten in SwiftData (ModelContainer und ModelContext) gespeichert und bei Fehlern (wie dem API-Limit) als Fallback geladen. Dadurch bleiben die Daten auch nach einem Neustart der App verfügbar.
+Die App verwendet SwiftData zur persistenten Speicherung von Daten (z. B. gespeicherte Kryptowährungsdaten oder Preishistorien). Das persistierbare Modell wird über SwiftData als **CryptoEntity** bzw. **ChartDataEntity** definiert. Im Code werden die Daten in SwiftData (ModelContainer und ModelContext) gespeichert und bei Fehlern (wie dem API-Limit) als Fallback geladen. Dadurch bleiben die Daten auch nach einem Neustart der App verfügbar.
 
 ## API Key und Sicherheitsaspekte
 Stelle sicher, dass du deinen API-Key niemals öffentlich in GitHub oder ähnlichen Repositories veröffentlichst. Die oben gezeigten Beispiele zur sicheren Speicherung und zum Abruf des API-Keys mit der Keychain sollen dir dabei helfen, die Sicherheit deiner Anwendung zu erhöhen.
