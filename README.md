@@ -88,6 +88,6 @@ Dieses Projekt ist proprietary. Alle Rechte sind vorbehalten. Der Code darf ohne
 
 ## Kontakt
 Für Fragen, Feedback oder Beiträge kontaktiere bitte:
-Jaychillah@gmail.com
+Michael.Winkler.Developer@gmail.com
 
 ## Viel Spaß!
