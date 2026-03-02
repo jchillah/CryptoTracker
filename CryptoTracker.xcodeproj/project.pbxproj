@@ -18,9 +18,9 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		CF9CC40C2F561BA8002CEE13 /* IMG */ = {
+		CF9CC40C2F561BA8002CEE13 /* img */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = IMG;
+			path = img;
 			sourceTree = "<group>";
 		};
 		CFA2CCD22D819917003AC2A9 /* CryptoTracker */ = {
@@ -50,7 +50,7 @@
 			children = (
 				CFA2CCD22D819917003AC2A9 /* CryptoTracker */,
 				CFA2CCD12D819917003AC2A9 /* Products */,
-				CF9CC40C2F561BA8002CEE13 /* IMG */,
+				CF9CC40C2F561BA8002CEE13 /* img */,
 			);
 			sourceTree = "<group>";
 		};
@@ -78,7 +78,7 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				CF9CC40C2F561BA8002CEE13 /* IMG */,
+				CF9CC40C2F561BA8002CEE13 /* img */,
 				CFA2CCD22D819917003AC2A9 /* CryptoTracker */,
 			);
 			name = CryptoTracker;
