@@ -20,6 +20,7 @@ CryptoTracker ist eine iOS-App, die es Benutzern ermöglicht, Kryptowährungen i
   <br/>
   <img src="img/cryptotracker_5.png" width="200" />
   <img src="img/cryptotracker_6.png" width="200" />
+  <img src="img/cryptotracker_7.png" width="200" />
 </p>
 
 ---
