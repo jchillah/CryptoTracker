@@ -10,6 +10,20 @@ CryptoTracker ist eine iOS-App, die es Benutzern ermöglicht, Kryptowährungen i
 - **Benutzerauthentifizierung:** Sign-In/Sign-Up mit Firebase
 - **API-Schlüssel sicher speichern:** Keychain zur sicheren Speicherung des API-Keys
 
+## Screenshots 🏞️
+
+<p align="center">
+  <img src="img/cryptotracker_1.png" width="200" />
+  <img src="img/cryptotracker_1.png" width="200" />
+  <img src="img/cryptotracker_3.png" width="200" />
+  <img src="img/cryptotracker_4.png" width="200" />
+  <br/>
+  <img src="img/cryptotracker_5.png" width="200" />
+  <img src="img/cryptotracker_6.png" width="200" />
+</p>
+
+---
+
 ## Installation
 
 ### Voraussetzungen
