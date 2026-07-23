@@ -1,5 +1,5 @@
 //
-//  LoginView.swift
+//  AuthView.swift
 //  CryptoTracker
 //
 //  Created by Michael Winkler on 17.03.25.
@@ -8,84 +8,102 @@
 import SwiftUI
 
 struct AuthView: View {
-    @StateObject var viewModel: AuthViewModel
-    @State private var confirmPassword: String = ""
-    @State private var showPassword: Bool = false
-    @State private var showConfirmPassword: Bool = false
-    
+    @ObservedObject var viewModel: AuthViewModel
+
+    @State private var confirmPassword = ""
+    @State private var showPassword = false
+    @State private var showConfirmPassword = false
+
     var body: some View {
-        VStack(spacing: 20) {
-            Text(viewModel.isRegistering ? "Registrieren" : "Anmelden")
-                .font(.largeTitle)
-                .bold()
-            
-            TextField("E-Mail", text: $viewModel.email)
-                .textFieldStyle(RoundedBorderTextFieldStyle())
-                .keyboardType(.emailAddress)
-                .autocapitalization(.none)
-                .disableAutocorrection(true)
-                .padding(.horizontal)
-            
-            PasswordFieldView(title: "Passwort", text: $viewModel.password, showPassword: $showPassword)
-            
-            if viewModel.isRegistering {
-                PasswordFieldView(title: "Passwort bestätigen", text: $confirmPassword, showPassword: $showConfirmPassword)
-            }
-            
-            if let error = viewModel.errorMessage {
-                Text(error)
-                    .foregroundStyle(.red)
-                    .padding(.horizontal)
-            }
-            
-            Button(action: {
-                Task {
-                    if viewModel.isRegistering {
-                        if viewModel.password == confirmPassword {
-                            await viewModel.register()
-                        } else {
-                            viewModel.errorMessage = "Passwörter stimmen nicht überein"
-                        }
-                    } else {
-                        await viewModel.signIn()
-                    }
-                }
-            }) {
+        ScrollView {
+            VStack(spacing: 20) {
                 Text(viewModel.isRegistering ? "Registrieren" : "Anmelden")
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.blue)
-                    .foregroundStyle(.white)
-                    .cornerRadius(8)
-            }
-            .padding(.horizontal)
-            
-            Button(action: {
-                withAnimation {
-                    viewModel.isRegistering.toggle()
-                    viewModel.errorMessage = nil
-                    confirmPassword = ""
+                    .font(.largeTitle.bold())
+
+                TextField("E-Mail", text: $viewModel.email)
+                    .textFieldStyle(.roundedBorder)
+                    .keyboardType(.emailAddress)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .textContentType(.emailAddress)
+                    .accessibilityIdentifier("emailField")
+
+                PasswordFieldView(
+                    title: "Passwort",
+                    text: $viewModel.password,
+                    showPassword: $showPassword
+                )
+                .textContentType(viewModel.isRegistering ? .newPassword : .password)
+                .accessibilityIdentifier("passwordField")
+
+                if viewModel.isRegistering {
+                    PasswordFieldView(
+                        title: "Passwort bestätigen",
+                        text: $confirmPassword,
+                        showPassword: $showConfirmPassword
+                    )
+                    .textContentType(.newPassword)
+                    .accessibilityIdentifier("confirmPasswordField")
                 }
-            }) {
-                Text(viewModel.isRegistering ?
-                     "Bereits einen Account? Jetzt anmelden" :
-                     "Noch keinen Account? Jetzt registrieren")
-                    .font(.footnote)
-            }
-            
-            if !viewModel.isRegistering {
-                Button("Passwort vergessen?") {
+
+                if let message = viewModel.message {
+                    Text(message)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                        .accessibilityIdentifier("authMessage")
+                }
+
+                Button {
                     Task {
-                        await viewModel.sendPasswordReset()
+                        if viewModel.isRegistering {
+                            await viewModel.register(
+                                confirmPassword: confirmPassword
+                            )
+                        } else {
+                            await viewModel.signIn()
+                        }
                     }
+                } label: {
+                    Text(viewModel.isRegistering ? "Registrieren" : "Anmelden")
+                        .frame(maxWidth: .infinity)
+                        .padding()
                 }
-                .font(.footnote)
+                .buttonStyle(.borderedProminent)
+                .disabled(viewModel.isLoading)
+                .accessibilityIdentifier("authSubmitButton")
+
+                Button {
+                    withAnimation {
+                        viewModel.switchMode()
+                        confirmPassword = ""
+                    }
+                } label: {
+                    Text(
+                        viewModel.isRegistering
+                            ? "Bereits einen Account? Jetzt anmelden"
+                            : "Noch keinen Account? Jetzt registrieren"
+                    )
+                    .font(.footnote)
+                }
+                .disabled(viewModel.isLoading)
+
+                if !viewModel.isRegistering {
+                    Button("Passwort vergessen?") {
+                        Task { await viewModel.sendPasswordReset() }
+                    }
+                    .font(.footnote)
+                    .disabled(viewModel.isLoading)
+                }
             }
+            .padding()
+            .frame(maxWidth: 480)
+            .frame(maxWidth: .infinity)
         }
-        .padding()
         .overlay {
             if viewModel.isLoading {
                 ProgressView()
+                    .controlSize(.large)
+                    .accessibilityLabel("Anfrage wird verarbeitet")
             }
         }
     }

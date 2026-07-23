@@ -1,112 +1,177 @@
 //
-//  PriceChartViewModel.swift
+//  SettingsViewModel.swift
 //  CryptoTracker
 //
 //  Created by Michael Winkler on 12.03.25.
 //
 
-import SwiftUI
 import FirebaseAuth
+import SwiftUI
 
 @MainActor
-class SettingsViewModel: ObservableObject {
-    @Published var newEmail: String = ""
-    @Published var newPassword: String = ""
-    @Published var newPasswordConfirm: String = ""
-    @Published var updateMessage: String? = nil
-    @Published var isLoading: Bool = false
+final class SettingsViewModel: ObservableObject {
+    @Published var newEmail = ""
+    @Published var newPassword = ""
+    @Published var newPasswordConfirm = ""
+    @Published private(set) var updateMessage: String?
+    @Published private(set) var isLoading = false
 
-    @AppStorage("isDarkMode") var isDarkMode: Bool = false
-    
-    func toggleDarkMode() {
-        isDarkMode.toggle()
-        guard let uid = Auth.auth().currentUser?.uid else {
-            updateMessage = "Benutzer nicht gefunden."
+    @AppStorage("isDarkMode") private var storedDarkMode = false
+
+    private let settingsRepository: SettingsRepository
+
+    init(settingsRepository: SettingsRepository = .shared) {
+        self.settingsRepository = settingsRepository
+    }
+
+    func loadSettings() async {
+        guard let userID = Auth.auth().currentUser?.uid else {
+            updateMessage = nil
             return
         }
-        Task {
-            do {
-                try await SettingsRepository.shared.updateDarkMode(isDarkMode: isDarkMode, for: uid)
-            } catch {
-                updateMessage = error.localizedDescription
+
+        do {
+            let settings = try await settingsRepository.fetchSettings(for: userID)
+            if let isDarkMode = settings["isDarkMode"] as? Bool {
+                storedDarkMode = isDarkMode
             }
+        } catch {
+            updateMessage = error.localizedDescription
         }
     }
-    
+
+    func setDarkMode(_ isEnabled: Bool) async {
+        storedDarkMode = isEnabled
+
+        guard let userID = Auth.auth().currentUser?.uid else {
+            return
+        }
+
+        do {
+            try await settingsRepository.updateDarkMode(
+                isDarkMode: isEnabled,
+                for: userID
+            )
+        } catch {
+            updateMessage = error.localizedDescription
+        }
+    }
+
     func updateEmailSetting() async {
-        guard let uid = Auth.auth().currentUser?.uid,
-              let currentUser = Auth.auth().currentUser else {
+        let normalizedEmail = newEmail
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased()
+
+        guard normalizedEmail.contains("@") else {
+            updateMessage = "Bitte geben Sie eine gültige E-Mail-Adresse ein."
+            return
+        }
+
+        guard let currentUser = Auth.auth().currentUser else {
             updateMessage = "Benutzer nicht gefunden."
             return
         }
-        isLoading = true
-        do {
-            try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-                currentUser.sendEmailVerification(beforeUpdatingEmail: newEmail) { error in
-                    if let error = error {
+
+        await performLoadingTask {
+            try await withCheckedThrowingContinuation {
+                (continuation: CheckedContinuation<Void, Error>) in
+                currentUser.sendEmailVerification(
+                    beforeUpdatingEmail: normalizedEmail
+                ) { error in
+                    if let error {
                         continuation.resume(throwing: error)
                     } else {
                         continuation.resume(returning: ())
                     }
                 }
             }
-            updateMessage = "Verifizierungs-E-Mail gesendet. Bitte bestätigen Sie Ihre neue E-Mail-Adresse."
-     
-            try await SettingsRepository.shared.updateEmail(newEmail: newEmail, for: uid)
-            try await FavoritesRepository.shared.updateEmail(newEmail: newEmail, for: uid)
-        } catch {
-            updateMessage = error.localizedDescription
+
+            self.newEmail = ""
+            self.updateMessage = "Verifizierungs-E-Mail gesendet. Bitte bestätigen Sie die neue Adresse."
         }
-        isLoading = false
     }
 
-    
     func updatePassword() async {
         guard newPassword == newPasswordConfirm else {
             updateMessage = "Passwörter stimmen nicht überein."
             return
         }
-        
+
+        guard newPassword.count >= 8 else {
+            updateMessage = "Das Passwort muss mindestens 8 Zeichen lang sein."
+            return
+        }
+
         guard let currentUser = Auth.auth().currentUser else {
             updateMessage = "Benutzer nicht gefunden."
             return
         }
-        
-        guard newPassword.count >= 6 else {
-            updateMessage = "Das Passwort muss mindestens 6 Zeichen lang sein."
-            return
-        }
-        
-        isLoading = true
-        do {
-            try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-                currentUser.updatePassword(to: newPassword) { error in
-                    if let error = error {
+
+        await performLoadingTask {
+            try await withCheckedThrowingContinuation {
+                (continuation: CheckedContinuation<Void, Error>) in
+                currentUser.updatePassword(to: self.newPassword) { error in
+                    if let error {
                         continuation.resume(throwing: error)
                     } else {
                         continuation.resume(returning: ())
                     }
                 }
             }
-            updateMessage = "Passwort erfolgreich aktualisiert."
-        } catch let error as NSError {
-            switch error.code {
-            case AuthErrorCode.requiresRecentLogin.rawValue:
-                updateMessage = "Bitte melden Sie sich erneut an, um das Passwort zu ändern."
-            case AuthErrorCode.weakPassword.rawValue:
-                updateMessage = "Das Passwort ist zu schwach. Bitte wählen Sie ein stärkeres Passwort."
-            default:
-                updateMessage = error.localizedDescription
-            }
+
+            self.newPassword = ""
+            self.newPasswordConfirm = ""
+            self.updateMessage = "Passwort erfolgreich aktualisiert."
         }
-        isLoading = false
     }
-    
+
     func signOut() async {
         do {
             try AuthService.shared.signOut()
         } catch {
             updateMessage = error.localizedDescription
+        }
+    }
+
+    func deleteAccount() async {
+        guard let currentUser = Auth.auth().currentUser else {
+            updateMessage = "Benutzer nicht gefunden."
+            return
+        }
+
+        await performLoadingTask {
+            try await self.settingsRepository.deleteSettings(for: currentUser.uid)
+
+            try await withCheckedThrowingContinuation {
+                (continuation: CheckedContinuation<Void, Error>) in
+                currentUser.delete { error in
+                    if let error {
+                        continuation.resume(throwing: error)
+                    } else {
+                        continuation.resume(returning: ())
+                    }
+                }
+            }
+
+            self.updateMessage = nil
+        }
+    }
+
+    private func performLoadingTask(
+        _ operation: @escaping () async throws -> Void
+    ) async {
+        updateMessage = nil
+        isLoading = true
+        defer { isLoading = false }
+
+        do {
+            try await operation()
+        } catch let error as NSError {
+            if error.code == AuthErrorCode.requiresRecentLogin.rawValue {
+                updateMessage = "Bitte melden Sie sich erneut an, um diese Änderung vorzunehmen."
+            } else {
+                updateMessage = error.localizedDescription
+            }
         }
     }
 }

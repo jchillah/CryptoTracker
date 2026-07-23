@@ -1,0 +1,37 @@
+name: Sync from canonical repository
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 4 * * 1'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: canonical-sync
+  cancel-in-progress: true
+
+jobs:
+  sync:
+    if: github.repository != 'jchillah/CryptoTracker'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Mirror canonical main branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET_REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          git clone \
+            --branch main \
+            --single-branch \
+            https://github.com/jchillah/CryptoTracker.git \
+            canonical
+          cd canonical
+          git push \
+            --force \
+            "https://x-access-token:${GH_TOKEN}@github.com/${TARGET_REPOSITORY}.git" \
+            main:main

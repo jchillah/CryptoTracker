@@ -9,120 +9,134 @@ import Foundation
 import SwiftData
 
 @MainActor
-class CryptoListViewModel: ObservableObject {
-    @Published var lastUpdate: Date? = nil
-    @Published var coins: [Crypto] = []
-    @Published var statusMessage: String = "Laden…"
-    @Published var selectedCurrency: String = "usd" {
-        didSet {
-            applyConversionRate()
-        }
+final class CryptoListViewModel: ObservableObject {
+    @Published private(set) var lastUpdate: Date?
+    @Published private(set) var coins: [Crypto] = []
+    @Published private(set) var statusMessage = "Laden…"
+    @Published var selectedCurrency = "usd" {
+        didSet { applyConversionRate() }
     }
-    
-    private let baseCurrency: String = "usd"
-    private var service: CryptoService
-    private var lastFetchedAt: Date? = nil
+
+    private enum Constants {
+        static let baseCurrency = "usd"
+        static let refreshInterval: TimeInterval = 60
+    }
+
+    private let service: CryptoService
+    private var lastFetchedAt: Date?
     private var originalCoins: [Crypto] = []
-    private let throttleInterval: TimeInterval = 60
-    
+    private var refreshTask: Task<Void, Never>?
+
     var allOriginalCoins: [Crypto] {
-        return originalCoins
+        originalCoins
     }
 
     init(modelContext: ModelContext) {
-        self.service = CryptoService(modelContext: modelContext)
-        Task {
-            await fetchExchangeRates()
-            await fetchCoins()
-            startTimer()
+        service = CryptoService(modelContext: modelContext)
+
+        refreshTask = Task { [weak self] in
+            await self?.initialize()
         }
     }
-    
+
+    deinit {
+        refreshTask?.cancel()
+    }
+
     func conversionFactor(for currency: String) -> Double {
-        let baseRate = service.getConversionRate(for: "usd")
+        let baseRate = service.getConversionRate(for: Constants.baseCurrency)
         let targetRate = service.getConversionRate(for: currency)
+        guard baseRate > 0 else { return 1 }
         return targetRate / baseRate
     }
 
-    func fetchCoins() async {
-        guard shouldFetch() else {
-            statusMessage = "Keine neuen Daten verfügbar. (letztes Update: \(DateFormatterUtil.formatDateToGermanStyle(Date())))"
+    func fetchCoins(force: Bool = false) async {
+        guard force || shouldFetch else {
             applyConversionRate()
             return
         }
 
+        statusMessage = "Laden…"
+
         do {
-            statusMessage = "Laden…"
-            let fetchedCoins = try await service.fetchCryptoData(for: baseCurrency)
-            originalCoins = fetchedCoins
-            coins = fetchedCoins
-            lastFetchedAt = Date()
-            statusMessage = "Daten aktualisiert (letztes Update: \(DateFormatterUtil.formatDateToGermanStyle(Date())))"
-        } catch let urlError as URLError {
-            if urlError.code == .badServerResponse {
-                statusMessage = "Abfrage-Limit erreicht, bitte versuchen Sie es in einer Minute erneut."
-            } else {
-                statusMessage = "Fehler beim Laden der Daten: \(urlError.localizedDescription)"
+            let result = try await service.fetchCryptoData(for: Constants.baseCurrency)
+            originalCoins = result.coins
+            lastFetchedAt = .now
+            lastUpdate = .now
+            applyConversionRate()
+
+            switch result.source {
+            case .remote:
+                statusMessage = "Daten aktualisiert: \(formattedLastUpdate)"
+            case .cache:
+                statusMessage = "Offline-Daten geladen: \(formattedLastUpdate)"
             }
         } catch {
-            statusMessage = "Fehler beim Laden der Daten: \(error.localizedDescription)"
+            statusMessage = "Fehler beim Laden: \(error.localizedDescription)"
         }
     }
-    
+
     func fetchExchangeRates() async {
         do {
             try await service.fetchExchangeRates()
+            applyConversionRate()
         } catch {
-            print("Fehler beim Abrufen der Wechselkurse: \(error)")
+            statusMessage = "Wechselkurse konnten nicht aktualisiert werden. Preise werden in USD angezeigt."
         }
     }
-    
+
     func applyConversionRate() {
-        let baseRate = service.getConversionRate(for: baseCurrency)
-        let targetRate = service.getConversionRate(for: selectedCurrency)
-        let conversionFactor = targetRate / baseRate
-        
+        let factor = conversionFactor(for: selectedCurrency)
+
         coins = originalCoins.map { coin in
-            return Crypto(
+            Crypto(
                 id: coin.id,
                 symbol: coin.symbol,
                 name: coin.name,
                 image: coin.image,
-                currentPrice: coin.currentPrice * conversionFactor,
-                marketCap: coin.marketCap * conversionFactor,
+                currentPrice: coin.currentPrice * factor,
+                marketCap: coin.marketCap * factor,
                 marketCapRank: coin.marketCapRank,
-                volume: coin.volume * conversionFactor,
-                high24h: coin.high24h * conversionFactor,
-                low24h: coin.low24h * conversionFactor,
-                priceChange24h: coin.priceChange24h * conversionFactor,
+                volume: coin.volume * factor,
+                high24h: coin.high24h * factor,
+                low24h: coin.low24h * factor,
+                priceChange24h: coin.priceChange24h * factor,
                 priceChangePercentage24h: coin.priceChangePercentage24h,
                 lastUpdated: coin.lastUpdated
             )
         }
     }
-    
+
     func formattedPrice(for coin: Crypto) -> String {
-        return CurrencyFormatter.formatPrice(
+        CurrencyFormatter.formatPrice(
             coin.currentPrice,
             currencyCode: selectedCurrency.uppercased()
         )
     }
-    
-    private func shouldFetch() -> Bool {
-        if let lastFetch = lastFetchedAt {
-            return Date().timeIntervalSince(lastFetch) > throttleInterval
-        }
-        return true
+
+    private var shouldFetch: Bool {
+        guard let lastFetchedAt else { return true }
+        return Date().timeIntervalSince(lastFetchedAt) >= Constants.refreshInterval
     }
-    
-    private func startTimer() {
-        Task {
-            while true {
-                try await Task
-                    .sleep(nanoseconds: UInt64(throttleInterval * 1_000_000_000)
-                    )
-                await fetchCoins()
+
+    private var formattedLastUpdate: String {
+        DateFormatterUtil.formatDateToGermanStyle(lastUpdate ?? .now)
+    }
+
+    private func initialize() async {
+        await fetchExchangeRates()
+        await fetchCoins(force: true)
+
+        while !Task.isCancelled {
+            do {
+                try await Task.sleep(
+                    nanoseconds: UInt64(Constants.refreshInterval * 1_000_000_000)
+                )
+            } catch {
+                return
             }
+
+            await fetchCoins(force: true)
         }
     }
 }

@@ -7,9 +7,9 @@
 
 import Foundation
 
-struct NewsArticle: Identifiable, Decodable {
+struct NewsArticle: Identifiable, Decodable, Sendable {
     var id: String { url }
-    
+
     let source: Source
     let author: String?
     let title: String
@@ -18,13 +18,9 @@ struct NewsArticle: Identifiable, Decodable {
     let urlToImage: String?
     let publishedAt: Date
     let content: String?
-    
-    struct Source: Decodable {
+
+    struct Source: Decodable, Sendable {
         let id: String?
         let name: String
-    }
-    
-    enum CodingKeys: String, CodingKey {
-        case source, author, title, description, url, urlToImage, publishedAt, content
     }
 }

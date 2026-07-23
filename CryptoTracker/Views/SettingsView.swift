@@ -8,66 +8,103 @@
 import SwiftUI
 
 struct SettingsView: View {
-    @StateObject var viewModel = SettingsViewModel()
-    @AppStorage("isDarkMode") var isDarkMode: Bool = false
-    
-    @State private var showPassword: Bool = false
-    @State private var showConfirmPassword: Bool = false
+    @EnvironmentObject private var viewModel: SettingsViewModel
+    @AppStorage("isDarkMode") private var isDarkMode = false
+
+    @State private var showPassword = false
+    @State private var showConfirmPassword = false
+    @State private var showsDeleteConfirmation = false
 
     var body: some View {
         NavigationStack {
             Form {
-                Section(header: Text("Account Einstellungen")) {
-                    TextField("Neue E-Mail", text: $viewModel.newEmail)
-                        .keyboardType(.emailAddress)
-                        .autocapitalization(.none)
-                        .disableAutocorrection(true)
-                    Button("E-Mail aktualisieren") {
-                        Task {
-                            await viewModel.updateEmailSetting()
-                        }
-                    }
-                    
-                    PasswordFieldView(title: "Neues Passwort", text: $viewModel.newPassword, showPassword: $showPassword)
-                    PasswordFieldView(title: "Passwort bestätigen", text: $viewModel.newPasswordConfirm, showPassword: $showConfirmPassword)
-                    
-                    Button("Passwort aktualisieren") {
-                        Task {
-                            await viewModel.updatePassword()
-                        }
-                    }
-                }
-                
-                Section(header: Text("Darstellung")) {
-                    Toggle(isOn: $isDarkMode) {
-                        Text("Dark Mode")
-                    }
-                    .onChange(of: isDarkMode) { _, newValue in
-                        viewModel.toggleDarkMode()
-                    }
-                }
+                accountSection
+                appearanceSection
+                sessionSection
 
-                Section {
-                    Button("Abmelden") {
-                        Task {
-                            await viewModel.signOut()
-                        }
-                    }
-                    .foregroundStyle(.red)
-                }
-                
                 if let message = viewModel.updateMessage {
-                    Section {
+                    Section("Status") {
                         Text(message)
-                            .foregroundStyle(.red)
+                            .foregroundStyle(.secondary)
+                            .accessibilityIdentifier("settingsStatusMessage")
                     }
                 }
             }
             .navigationTitle("Einstellungen")
+            .disabled(viewModel.isLoading)
             .overlay {
                 if viewModel.isLoading {
                     ProgressView()
+                        .controlSize(.large)
+                        .accessibilityLabel("Änderung wird gespeichert")
                 }
+            }
+            .confirmationDialog(
+                "Account dauerhaft löschen?",
+                isPresented: $showsDeleteConfirmation,
+                titleVisibility: .visible
+            ) {
+                Button("Account endgültig löschen", role: .destructive) {
+                    Task { await viewModel.deleteAccount() }
+                }
+                Button("Abbrechen", role: .cancel) { }
+            } message: {
+                Text("Dabei werden Ihr Firebase-Account, Ihre Favoriten und Ihre Einstellungen gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.")
+            }
+        }
+    }
+
+    private var accountSection: some View {
+        Section("Account") {
+            TextField("Neue E-Mail", text: $viewModel.newEmail)
+                .keyboardType(.emailAddress)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+                .textContentType(.emailAddress)
+
+            Button("E-Mail aktualisieren") {
+                Task { await viewModel.updateEmailSetting() }
+            }
+            .disabled(viewModel.newEmail.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+
+            PasswordFieldView(
+                title: "Neues Passwort",
+                text: $viewModel.newPassword,
+                showPassword: $showPassword
+            )
+            .textContentType(.newPassword)
+
+            PasswordFieldView(
+                title: "Passwort bestätigen",
+                text: $viewModel.newPasswordConfirm,
+                showPassword: $showConfirmPassword
+            )
+            .textContentType(.newPassword)
+
+            Button("Passwort aktualisieren") {
+                Task { await viewModel.updatePassword() }
+            }
+            .disabled(viewModel.newPassword.isEmpty || viewModel.newPasswordConfirm.isEmpty)
+        }
+    }
+
+    private var appearanceSection: some View {
+        Section("Darstellung") {
+            Toggle("Dark Mode", isOn: $isDarkMode)
+                .onChange(of: isDarkMode) { _, newValue in
+                    Task { await viewModel.setDarkMode(newValue) }
+                }
+        }
+    }
+
+    private var sessionSection: some View {
+        Section {
+            Button("Abmelden", role: .destructive) {
+                Task { await viewModel.signOut() }
+            }
+
+            Button("Account löschen", role: .destructive) {
+                showsDeleteConfirmation = true
             }
         }
     }
@@ -75,4 +112,5 @@ struct SettingsView: View {
 
 #Preview {
     SettingsView()
+        .environmentObject(SettingsViewModel())
 }

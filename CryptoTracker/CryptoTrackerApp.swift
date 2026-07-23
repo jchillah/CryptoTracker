@@ -5,38 +5,40 @@
 //  Created by Michael Winkler on 12.03.25.
 //
 
-import SwiftUI
-import Firebase
-import FirebaseAuth
+import FirebaseCore
+import OSLog
 import SwiftData
+import SwiftUI
 
 @main
 struct CryptoTrackerApp: App {
-    @AppStorage("isDarkMode") var isDarkMode: Bool = false
-    
-    let container: ModelContainer
+    @AppStorage("isDarkMode") private var isDarkMode = false
 
-    @StateObject private var authViewModel = AuthViewModel()
-    @StateObject private var favoritesViewModel = FavoritesViewModel()
+    private let container: ModelContainer
+
+    @StateObject private var authViewModel: AuthViewModel
+    @StateObject private var favoritesViewModel: FavoritesViewModel
     @StateObject private var cryptoListViewModel: CryptoListViewModel
-    @StateObject private var settingsViewModel = SettingsViewModel()
-    @StateObject private var priceChartViewModel: PriceChartViewModel
+    @StateObject private var settingsViewModel: SettingsViewModel
 
     init() {
-        //         let saved = KeychainHelper.shared.saveAPIKey("YOUR_API_KEY_HERE")
-        //         if saved {
-        //             print("API-Key erfolgreich in der Keychain gespeichert.")
-        //         } else {
-        //             print("Fehler beim Speichern des API-Keys.")
-        //         }
-        FirebaseApp.configure()
-        let schema = Schema([CryptoEntity.self, ChartDataEntity.self])
-        self.container = try! ModelContainer(for: schema)
-        let mainContext = container.mainContext
-        _cryptoListViewModel = StateObject(wrappedValue: CryptoListViewModel(modelContext: mainContext))
-        _priceChartViewModel = StateObject(wrappedValue: PriceChartViewModel(modelContext: mainContext))
+        if FirebaseApp.app() == nil {
+            FirebaseApp.configure()
+        }
+
+        let modelContainer = Self.makeModelContainer()
+        container = modelContainer
+
+        _authViewModel = StateObject(wrappedValue: AuthViewModel())
+        _favoritesViewModel = StateObject(wrappedValue: FavoritesViewModel())
+        _cryptoListViewModel = StateObject(
+            wrappedValue: CryptoListViewModel(
+                modelContext: modelContainer.mainContext
+            )
+        )
+        _settingsViewModel = StateObject(wrappedValue: SettingsViewModel())
     }
-    
+
     var body: some Scene {
         WindowGroup {
             AppView()
@@ -45,20 +47,39 @@ struct CryptoTrackerApp: App {
                 .environmentObject(favoritesViewModel)
                 .environmentObject(cryptoListViewModel)
                 .environmentObject(settingsViewModel)
-                .environmentObject(priceChartViewModel)
                 .modelContainer(container)
-                .task {
-                    if let userId = Auth.auth().currentUser?.uid {
-                        do {
-                            let settings = try await SettingsRepository.shared.fetchSettings(for: userId)
-                            if let dm = settings["isDarkMode"] as? Bool {
-                                isDarkMode = dm
-                            }
-                        } catch {
-                            print("Fehler beim Abrufen der Einstellungen: \(error)")
-                        }
-                    }
-                }
         }
     }
+
+    private static func makeModelContainer() -> ModelContainer {
+        let schema = Schema([CryptoEntity.self, ChartDataEntity.self])
+
+        do {
+            return try ModelContainer(for: schema)
+        } catch {
+            Logger.app.error(
+                "Persistent model container failed: \(error.localizedDescription, privacy: .public)"
+            )
+
+            do {
+                return try ModelContainer(
+                    for: schema,
+                    configurations: ModelConfiguration(
+                        isStoredInMemoryOnly: true
+                    )
+                )
+            } catch {
+                preconditionFailure(
+                    "CryptoTracker could not create a model container: \(error)"
+                )
+            }
+        }
+    }
+}
+
+private extension Logger {
+    static let app = Logger(
+        subsystem: Bundle.main.bundleIdentifier ?? "CryptoTracker",
+        category: "App"
+    )
 }
