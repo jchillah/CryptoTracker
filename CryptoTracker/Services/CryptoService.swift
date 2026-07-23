@@ -8,111 +8,153 @@
 import Foundation
 import SwiftData
 
-class CryptoService {
-    private let coinDataURLBase = "https://api.coingecko.com/api/v3/coins/markets?vs_currency="
-    private let exchangeRatesURL = "https://api.coingecko.com/api/v3/exchange_rates"
-    
-    private var exchangeRates: [String: Double] = [:]
-    private var modelContext: ModelContext
+enum CryptoDataSource {
+    case remote
+    case cache
+}
 
-    init(modelContext: ModelContext) {
+struct CryptoFetchResult {
+    let coins: [Crypto]
+    let source: CryptoDataSource
+}
+
+enum CryptoServiceError: LocalizedError {
+    case invalidURL
+    case invalidResponse
+    case rateLimited
+    case httpStatus(Int)
+
+    var errorDescription: String? {
+        switch self {
+        case .invalidURL:
+            return "Die Anfrage konnte nicht erstellt werden."
+        case .invalidResponse:
+            return "Der Server hat keine gültige Antwort geliefert."
+        case .rateLimited:
+            return "Das API-Limit wurde erreicht. Bitte versuchen Sie es später erneut."
+        case .httpStatus(let statusCode):
+            return "Die Anfrage ist mit HTTP-Status \(statusCode) fehlgeschlagen."
+        }
+    }
+}
+
+@MainActor
+final class CryptoService {
+    private enum Constants {
+        static let marketsURL = URL(string: "https://api.coingecko.com/api/v3/coins/markets")
+        static let exchangeRatesURL = URL(string: "https://api.coingecko.com/api/v3/exchange_rates")
+        static let requestTimeout: TimeInterval = 20
+    }
+
+    private let modelContext: ModelContext
+    private let session: URLSession
+    private var exchangeRates: [String: Double] = [:]
+
+    init(
+        modelContext: ModelContext,
+        session: URLSession = .shared
+    ) {
         self.modelContext = modelContext
+        self.session = session
     }
-    
-    func fetchCryptoData(for currency: String) async throws -> [Crypto] {
-        let urlString = "\(coinDataURLBase)\(currency)"
-        guard let url = URL(string: urlString) else {
-            throw URLError(.badURL)
-        }
-        
+
+    func fetchCryptoData(for currency: String) async throws -> CryptoFetchResult {
         do {
-            let (data, response) = try await URLSession.shared.data(from: url)
-            guard let httpResponse = response as? HTTPURLResponse else {
-                throw URLError(.badServerResponse)
-            }
-            
-            if httpResponse.statusCode == 429 {
-                print("⚠️ API-Limit erreicht (429). Wartezeit empfohlen.")
-                throw NSError(domain: "CryptoService", code: 429, userInfo: [NSLocalizedDescriptionKey: "Abfrage-Limit erreicht, bitte versuchen Sie es in einer Minute erneut."])
-            }
-            
-            guard (200...299).contains(httpResponse.statusCode) else {
-                throw URLError(.badServerResponse)
-            }
-            
-            let coins = try JSONDecoder().decode([Crypto].self, from: data)
-            saveCoinsToDatabase(coins: coins)  // Speichern in SwiftData
-            return coins
+            let coins = try await fetchRemoteCryptoData(for: currency)
+            try persist(coins)
+            return CryptoFetchResult(coins: coins, source: .remote)
         } catch {
-            // Falls ein Fehler auftritt, versuche, die persistierten Daten zu laden
-            let localCoins = loadCoinsFromDatabase()
-            if !localCoins.isEmpty {
-                // Mappe CryptoEntity zurück in Crypto
-                return localCoins.map { entity in
-                    return Crypto(
-                        id: entity.id,
-                        symbol: entity.symbol,
-                        name: entity.name,
-                        image: entity.image,
-                        currentPrice: entity.currentPrice,
-                        marketCap: entity.marketCap,
-                        marketCapRank: entity.marketCapRank,
-                        volume: entity.volume,
-                        high24h: entity.high24h,
-                        low24h: entity.low24h,
-                        priceChange24h: entity.priceChange24h,
-                        priceChangePercentage24h: entity.priceChangePercentage24h,
-                        lastUpdated: ISO8601DateFormatter().string(from: entity.lastUpdated)
-                    )
-                }
+            let cachedCoins = try loadCachedCoins()
+            guard !cachedCoins.isEmpty else {
+                throw error
             }
-            throw error
+            return CryptoFetchResult(coins: cachedCoins, source: .cache)
         }
     }
-    
+
     func fetchExchangeRates() async throws {
-        guard let url = URL(string: exchangeRatesURL) else {
-            throw URLError(.badURL)
+        guard let url = Constants.exchangeRatesURL else {
+            throw CryptoServiceError.invalidURL
         }
-        
-        do {
-            let (data, response) = try await URLSession.shared.data(from: url)
-            guard let httpResponse = response as? HTTPURLResponse else {
-                throw URLError(.badServerResponse)
-            }
-            
-            if httpResponse.statusCode == 429 {
-                print("⚠️ API-Limit erreicht (429). Wartezeit empfohlen.")
-                throw NSError(domain: "CryptoService", code: 429, userInfo: [NSLocalizedDescriptionKey: "Abfrage-Limit erreicht, bitte versuchen Sie es in einer Minute erneut."])
-            }
-            
-            guard (200...299).contains(httpResponse.statusCode) else {
-                throw URLError(.badServerResponse)
-            }
-            
-            let ratesResponse = try JSONDecoder().decode(ExchangeRatesResponse.self, from: data)
-            exchangeRates = ratesResponse.rates.mapValues { $0.value }
-        } catch {
-            throw error
-        }
+
+        let data = try await requestData(from: url)
+        let response = try JSONDecoder().decode(ExchangeRatesResponse.self, from: data)
+        exchangeRates = response.rates.mapValues(\.value)
     }
-    
+
     func getConversionRate(for currency: String) -> Double {
-        return exchangeRates[currency.lowercased()] ?? 1.0 
+        exchangeRates[currency.lowercased()] ?? 1
     }
-    
-    // Speichere die Coins in SwiftData
-    private func saveCoinsToDatabase(coins: [Crypto]) {
-        for coin in coins {
-            let entity = CryptoEntity(from: coin)
-            modelContext.insert(entity)
+
+    private func fetchRemoteCryptoData(for currency: String) async throws -> [Crypto] {
+        guard let baseURL = Constants.marketsURL,
+              var components = URLComponents(url: baseURL, resolvingAgainstBaseURL: false) else {
+            throw CryptoServiceError.invalidURL
         }
-        try? modelContext.save()
+
+        components.queryItems = [
+            URLQueryItem(name: "vs_currency", value: currency.lowercased()),
+            URLQueryItem(name: "order", value: "market_cap_desc"),
+            URLQueryItem(name: "per_page", value: "100"),
+            URLQueryItem(name: "page", value: "1"),
+            URLQueryItem(name: "sparkline", value: "false"),
+            URLQueryItem(name: "price_change_percentage", value: "24h")
+        ]
+
+        guard let url = components.url else {
+            throw CryptoServiceError.invalidURL
+        }
+
+        let data = try await requestData(from: url)
+        return try JSONDecoder().decode([Crypto].self, from: data)
     }
-    
-    // Lade die Coins aus SwiftData
-    private func loadCoinsFromDatabase() -> [CryptoEntity] {
-        let fetchDescriptor = FetchDescriptor<CryptoEntity>()
-        return (try? modelContext.fetch(fetchDescriptor)) ?? []
+
+    private func requestData(from url: URL) async throws -> Data {
+        var request = URLRequest(url: url)
+        request.timeoutInterval = Constants.requestTimeout
+        request.cachePolicy = .reloadRevalidatingCacheData
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+
+        let (data, response) = try await session.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw CryptoServiceError.invalidResponse
+        }
+
+        switch httpResponse.statusCode {
+        case 200...299:
+            return data
+        case 429:
+            throw CryptoServiceError.rateLimited
+        default:
+            throw CryptoServiceError.httpStatus(httpResponse.statusCode)
+        }
+    }
+
+    private func persist(_ coins: [Crypto]) throws {
+        let storedEntities = try modelContext.fetch(FetchDescriptor<CryptoEntity>())
+        let entitiesByID = Dictionary(uniqueKeysWithValues: storedEntities.map { ($0.id, $0) })
+        let incomingIDs = Set(coins.map(\.id))
+
+        for coin in coins {
+            if let existingEntity = entitiesByID[coin.id] {
+                existingEntity.update(from: coin)
+            } else {
+                modelContext.insert(CryptoEntity(from: coin))
+            }
+        }
+
+        for entity in storedEntities where !incomingIDs.contains(entity.id) {
+            modelContext.delete(entity)
+        }
+
+        try modelContext.save()
+    }
+
+    private func loadCachedCoins() throws -> [Crypto] {
+        var descriptor = FetchDescriptor<CryptoEntity>(
+            sortBy: [SortDescriptor(\CryptoEntity.marketCapRank)]
+        )
+        descriptor.fetchLimit = 100
+        return try modelContext.fetch(descriptor).map { $0.toDomain() }
     }
 }
