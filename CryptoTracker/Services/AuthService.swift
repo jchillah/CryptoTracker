@@ -5,61 +5,45 @@
 //  Created by Michael Winkler on 17.03.25.
 //
 
-import Foundation
 import FirebaseAuth
+import Foundation
 
-class AuthService {
+final class AuthService {
     static let shared = AuthService()
-    
+
     private init() { }
-    
+
     func signUp(email: String, password: String) async throws -> User {
-        return try await withCheckedThrowingContinuation { continuation in
-            Auth.auth().createUser(withEmail: email, password: password) { authResult, error in
-                if let error = error {
-                    continuation.resume(throwing: error)
-                } else if let user = authResult?.user {
-                    continuation.resume(returning: user)
-                }
-            }
-        }
+        try await Auth.auth()
+            .createUser(withEmail: email, password: password)
+            .user
     }
-    
+
     func signIn(email: String, password: String) async throws -> User {
-        return try await withCheckedThrowingContinuation { continuation in
-            Auth.auth().signIn(withEmail: email, password: password) { authResult, error in
-                if let error = error {
-                    continuation.resume(throwing: error)
-                } else if let user = authResult?.user {
-                    continuation.resume(returning: user)
-                }
-            }
-        }
+        try await Auth.auth()
+            .signIn(withEmail: email, password: password)
+            .user
     }
-    
+
     func sendPasswordReset(email: String) async throws {
-        return try await withCheckedThrowingContinuation { continuation in
-            Auth.auth().sendPasswordReset(withEmail: email) { error in
-                if let error = error {
-                    continuation.resume(throwing: error)
-                } else {
-                    continuation.resume()
-                }
-            }
-        }
+        try await Auth.auth().sendPasswordReset(withEmail: email)
     }
-    
+
     func signOut() throws {
         try Auth.auth().signOut()
     }
-    
-    func addAuthStateListener(_ listener: @escaping (User?) -> Void) -> AuthStateDidChangeListenerHandle {
-        return Auth.auth().addStateDidChangeListener { _, user in
+
+    func addAuthStateListener(
+        _ listener: @escaping (User?) -> Void
+    ) -> AuthStateDidChangeListenerHandle {
+        Auth.auth().addStateDidChangeListener { _, user in
             listener(user)
         }
     }
-    
-    func removeAuthStateListener(_ handle: AuthStateDidChangeListenerHandle) {
+
+    func removeAuthStateListener(
+        _ handle: AuthStateDidChangeListenerHandle
+    ) {
         Auth.auth().removeStateDidChangeListener(handle)
     }
 }
