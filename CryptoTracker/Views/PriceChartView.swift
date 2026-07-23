@@ -5,81 +5,99 @@
 //  Created by Michael Winkler on 12.03.25.
 //
 
-import SwiftUI
 import Charts
 import SwiftData
+import SwiftUI
 
 struct PriceChartView: View {
-    @StateObject var viewModel: PriceChartViewModel
-    let coinId: String
-    let vsCurrency: String
-    
-    @State private var selectedDuration: ChartDuration = .week
-    @Environment(\.modelContext) var modelContext: ModelContext
+    @StateObject private var viewModel: PriceChartViewModel
 
-    init(coinId: String, vsCurrency: String, modelContext: ModelContext) {
-        self.coinId = coinId
-        self.vsCurrency = vsCurrency
-        _viewModel = StateObject(wrappedValue: PriceChartViewModel(modelContext: modelContext))
+    let coinID: String
+    let currency: String
+
+    @State private var selectedDuration: ChartDuration = .week
+
+    init(
+        coinId: String,
+        vsCurrency: String,
+        modelContext: ModelContext
+    ) {
+        coinID = coinId
+        currency = vsCurrency.lowercased()
+        _viewModel = StateObject(
+            wrappedValue: PriceChartViewModel(modelContext: modelContext)
+        )
     }
-    
+
     var body: some View {
-        VStack {
-            HStack {
-                Text("Zeitraum:")
-                Picker("Zeitraum", selection: $selectedDuration) {
-                    ForEach(ChartDuration.allCases) { duration in
-                        Text(duration.rawValue).tag(duration)
-                    }
+        VStack(spacing: 16) {
+            Picker("Zeitraum", selection: $selectedDuration) {
+                ForEach(ChartDuration.allCases) { duration in
+                    Text(duration.rawValue).tag(duration)
                 }
-                .pickerStyle(SegmentedPickerStyle())
             }
-            .padding(.horizontal)
-            
-            if viewModel.isLoading {
-                ProgressView("Lade Chart...")
-            } else if let errorMessage = viewModel.errorMessage {
-                Text("Fehler: \(errorMessage)")
-                    .foregroundColor(.red)
+            .pickerStyle(.segmented)
+            .accessibilityIdentifier("chartDurationPicker")
+
+            chartContent
+        }
+        .task(id: "\(coinID)-\(currency)") {
+            await viewModel.fetchPriceHistory(
+                for: coinID,
+                currency: currency
+            )
+        }
+    }
+
+    @ViewBuilder
+    private var chartContent: some View {
+        if viewModel.isLoading {
+            ProgressView("Chart wird geladen…")
+                .frame(maxWidth: .infinity, minHeight: 200)
+        } else if let errorMessage = viewModel.errorMessage {
+            ContentUnavailableView(
+                "Chart nicht verfügbar",
+                systemImage: "chart.xyaxis.line",
+                description: Text(errorMessage)
+            )
+            .frame(minHeight: 200)
+        } else {
+            let filteredData = viewModel.filteredData(for: selectedDuration)
+
+            if filteredData.isEmpty {
+                ContentUnavailableView(
+                    "Keine Chartdaten",
+                    systemImage: "chart.xyaxis.line",
+                    description: Text("Für den gewählten Zeitraum sind keine Daten verfügbar.")
+                )
+                .frame(minHeight: 200)
             } else {
-                let filteredData = viewModel.filteredData(for: selectedDuration)
-                if filteredData.isEmpty {
-                    Text("Keine Daten verfügbar, versuche es bitte in einer Minute erneut.")
-                        .foregroundStyle(.red)
-                } else {
-                    Chart {
-                        ForEach(filteredData) { dataPoint in
-                            LineMark(
-                                x: .value("Datum", dataPoint.date),
-                                y: .value("Preis", dataPoint.price)
-                            )
-                        }
-                    }
-                    .chartYAxisLabel("Preis")
-                    .frame(height: 200)
-                    .padding()
+                Chart(filteredData) { dataPoint in
+                    LineMark(
+                        x: .value("Datum", dataPoint.date),
+                        y: .value("Preis", dataPoint.price)
+                    )
+                    .interpolationMethod(.catmullRom)
                 }
-            }
-        }
-        .onAppear {
-            Task {
-                await viewModel.fetchPriceHistory(for: coinId)
-            }
-        }
-        .onChange(of: selectedDuration) { _, _ in
-            Task {
-                await viewModel.fetchPriceHistory(for: coinId)
+                .chartYAxisLabel(currency.uppercased())
+                .frame(height: 220)
+                .accessibilityLabel("Preisverlauf in \(currency.uppercased())")
             }
         }
     }
 }
 
 #Preview {
-    let container = try! ModelContainer(for: Schema([CryptoEntity.self, ChartDataEntity.self]))
+    let container = try! ModelContainer(
+        for: Schema([CryptoEntity.self, ChartDataEntity.self]),
+        configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+    )
+
     PriceChartView(
         coinId: "bitcoin",
         vsCurrency: "usd",
         modelContext: container.mainContext
     )
+    .padding()
     .modelContainer(container)
 }
