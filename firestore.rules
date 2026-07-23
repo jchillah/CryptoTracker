@@ -1,0 +1,32 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function ownsUserDocument(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function hasValidUserData(data) {
+      return data.keys().hasOnly(['email', 'favorites', 'isDarkMode'])
+        && (!('email' in data) || data.email is string)
+        && (!('favorites' in data)
+          || (data.favorites is list && data.favorites.size() <= 100))
+        && (!('isDarkMode' in data) || data.isDarkMode is bool);
+    }
+
+    match /users/{userId} {
+      allow read: if ownsUserDocument(userId);
+      allow create, update: if ownsUserDocument(userId)
+        && hasValidUserData(request.resource.data);
+      allow delete: if ownsUserDocument(userId);
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
