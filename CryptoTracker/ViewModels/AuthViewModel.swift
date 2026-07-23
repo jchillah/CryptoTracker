@@ -5,75 +5,129 @@
 //  Created by Michael Winkler on 17.03.25.
 //
 
-import SwiftUI
 import FirebaseAuth
+import Foundation
 
 @MainActor
-class AuthViewModel: ObservableObject {
-    @Published var currentUser: User? = nil
-    @Published var email: String = ""
-    @Published var password: String = ""
-    @Published var errorMessage: String?
-    @Published var isLoading: Bool = false
-    @Published var isRegistering: Bool = false
-    
+final class AuthViewModel: ObservableObject {
+    @Published private(set) var currentUser: User?
+    @Published var email = ""
+    @Published var password = ""
+    @Published private(set) var message: String?
+    @Published private(set) var isLoading = false
+    @Published var isRegistering = false
+
+    private let authService: AuthService
     private var authStateListener: AuthStateDidChangeListenerHandle?
-    
-    init() {
-        authStateListener = AuthService.shared.addAuthStateListener { [weak self] user in
-            self?.currentUser = user
+
+    init(authService: AuthService = .shared) {
+        self.authService = authService
+        authStateListener = authService.addAuthStateListener { [weak self] user in
+            Task { @MainActor in
+                self?.currentUser = user
+            }
         }
     }
-    
+
     deinit {
-        if let handle = authStateListener {
-            AuthService.shared.removeAuthStateListener(handle)
+        if let authStateListener {
+            authService.removeAuthStateListener(authStateListener)
         }
     }
-    
+
     func signIn() async {
-        errorMessage = nil
-        isLoading = true
-        do {
-            _ = try await AuthService.shared.signIn(email: email, password: password)
-            print("Erfolgreich angemeldet als \(email)")
-        } catch {
-            errorMessage = error.localizedDescription
-            print("Fehler beim Anmelden: \(error)")
+        guard validateCredentials() else { return }
+
+        await performAuthOperation {
+            _ = try await self.authService.signIn(
+                email: self.normalizedEmail,
+                password: self.password
+            )
         }
-        isLoading = false
     }
-    
-    func register() async {
-        errorMessage = nil
-        isLoading = true
-        do {
-            _ = try await AuthService.shared.signUp(email: email, password: password)
-            print("Registrierung erfolgreich für \(email)")
-        } catch {
-            errorMessage = error.localizedDescription
-            print("Fehler bei der Registrierung: \(error)")
+
+    func register(confirmPassword: String) async {
+        guard validateCredentials() else { return }
+        guard password == confirmPassword else {
+            message = "Passwörter stimmen nicht überein."
+            return
         }
-        isLoading = false
+        guard password.count >= 8 else {
+            message = "Das Passwort muss mindestens 8 Zeichen lang sein."
+            return
+        }
+
+        await performAuthOperation {
+            _ = try await self.authService.signUp(
+                email: self.normalizedEmail,
+                password: self.password
+            )
+        }
     }
-    
+
     func sendPasswordReset() async {
-        errorMessage = nil
-        isLoading = true
-        do {
-            try await AuthService.shared.sendPasswordReset(email: email)
-            errorMessage = "Passwort-Zurücksetzungs-E-Mail gesendet."
-        } catch {
-            errorMessage = error.localizedDescription
+        guard !normalizedEmail.isEmpty else {
+            message = "Bitte geben Sie zuerst Ihre E-Mail-Adresse ein."
+            return
         }
-        isLoading = false
+
+        await performAuthOperation(successMessage: "E-Mail zum Zurücksetzen des Passworts wurde gesendet.") {
+            try await self.authService.sendPasswordReset(
+                email: self.normalizedEmail
+            )
+        }
     }
-    
-    func signOut() async {
+
+    func signOut() {
         do {
-            try AuthService.shared.signOut()
+            try authService.signOut()
+            clearCredentials()
         } catch {
-            errorMessage = error.localizedDescription
+            message = error.localizedDescription
         }
+    }
+
+    func switchMode() {
+        isRegistering.toggle()
+        message = nil
+        password = ""
+    }
+
+    private var normalizedEmail: String {
+        email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    }
+
+    private func validateCredentials() -> Bool {
+        guard normalizedEmail.contains("@") else {
+            message = "Bitte geben Sie eine gültige E-Mail-Adresse ein."
+            return false
+        }
+        guard !password.isEmpty else {
+            message = "Bitte geben Sie Ihr Passwort ein."
+            return false
+        }
+        return true
+    }
+
+    private func performAuthOperation(
+        successMessage: String? = nil,
+        _ operation: @escaping () async throws -> Void
+    ) async {
+        message = nil
+        isLoading = true
+        defer { isLoading = false }
+
+        do {
+            try await operation()
+            message = successMessage
+        } catch {
+            message = error.localizedDescription
+        }
+    }
+
+    private func clearCredentials() {
+        email = ""
+        password = ""
+        message = nil
     }
 }
