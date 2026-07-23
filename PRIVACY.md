@@ -24,13 +24,12 @@ Passwörter werden nicht durch CryptoTracker selbst gespeichert. Die Authentifiz
 
 ### Favoriten und Einstellungen
 
-Für angemeldete Nutzer werden in Cloud Firestore gespeichert:
+Für angemeldete Nutzer werden in Cloud Firestore ausschließlich gespeichert:
 
 - IDs der favorisierten Kryptowährungen
 - Dark-Mode-Einstellung
-- dem Nutzerkonto zugeordnete E-Mail-Adresse
 
-Diese Daten werden unter der Firebase-Nutzer-ID gespeichert und durch Firestore-Sicherheitsregeln auf den jeweiligen Nutzer beschränkt.
+Diese Daten werden unter der Firebase-Nutzer-ID gespeichert und durch Firestore-Sicherheitsregeln auf den jeweiligen Nutzer beschränkt. Die E-Mail-Adresse wird nicht zusätzlich in Firestore gespeichert.
 
 ### Markt-, Chart- und Nachrichtendaten
 
