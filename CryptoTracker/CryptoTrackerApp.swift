@@ -20,7 +20,6 @@ struct CryptoTrackerApp: App {
     @StateObject private var favoritesViewModel: FavoritesViewModel
     @StateObject private var cryptoListViewModel: CryptoListViewModel
     @StateObject private var settingsViewModel: SettingsViewModel
-    @StateObject private var priceChartViewModel: PriceChartViewModel
 
     init() {
         if FirebaseApp.app() == nil {
@@ -38,11 +37,6 @@ struct CryptoTrackerApp: App {
             )
         )
         _settingsViewModel = StateObject(wrappedValue: SettingsViewModel())
-        _priceChartViewModel = StateObject(
-            wrappedValue: PriceChartViewModel(
-                modelContext: modelContainer.mainContext
-            )
-        )
     }
 
     var body: some Scene {
@@ -53,7 +47,6 @@ struct CryptoTrackerApp: App {
                 .environmentObject(favoritesViewModel)
                 .environmentObject(cryptoListViewModel)
                 .environmentObject(settingsViewModel)
-                .environmentObject(priceChartViewModel)
                 .modelContainer(container)
         }
     }
