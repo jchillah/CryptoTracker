@@ -19,14 +19,9 @@ final class SettingsViewModel: ObservableObject {
     @AppStorage("isDarkMode") private var storedDarkMode = false
 
     private let settingsRepository: SettingsRepository
-    private let favoritesRepository: FavoritesRepository
 
-    init(
-        settingsRepository: SettingsRepository = .shared,
-        favoritesRepository: FavoritesRepository = .shared
-    ) {
+    init(settingsRepository: SettingsRepository = .shared) {
         self.settingsRepository = settingsRepository
-        self.favoritesRepository = favoritesRepository
     }
 
     func loadSettings() async {
@@ -63,10 +58,12 @@ final class SettingsViewModel: ObservableObject {
     }
 
     func updateEmailSetting() async {
-        let normalizedEmail = newEmail.trimmingCharacters(in: .whitespacesAndNewlines)
+        let normalizedEmail = newEmail
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased()
 
-        guard !normalizedEmail.isEmpty else {
-            updateMessage = "Bitte geben Sie eine E-Mail-Adresse ein."
+        guard normalizedEmail.contains("@") else {
+            updateMessage = "Bitte geben Sie eine gültige E-Mail-Adresse ein."
             return
         }
 
@@ -76,8 +73,11 @@ final class SettingsViewModel: ObservableObject {
         }
 
         await performLoadingTask {
-            try await withCheckedThrowingContinuation { continuation in
-                currentUser.sendEmailVerification(beforeUpdatingEmail: normalizedEmail) { error in
+            try await withCheckedThrowingContinuation {
+                (continuation: CheckedContinuation<Void, Error>) in
+                currentUser.sendEmailVerification(
+                    beforeUpdatingEmail: normalizedEmail
+                ) { error in
                     if let error {
                         continuation.resume(throwing: error)
                     } else {
@@ -85,15 +85,6 @@ final class SettingsViewModel: ObservableObject {
                     }
                 }
             }
-
-            try await self.settingsRepository.updateEmail(
-                newEmail: normalizedEmail,
-                for: currentUser.uid
-            )
-            try await self.favoritesRepository.updateEmail(
-                newEmail: normalizedEmail,
-                for: currentUser.uid
-            )
 
             self.newEmail = ""
             self.updateMessage = "Verifizierungs-E-Mail gesendet. Bitte bestätigen Sie die neue Adresse."
@@ -117,7 +108,8 @@ final class SettingsViewModel: ObservableObject {
         }
 
         await performLoadingTask {
-            try await withCheckedThrowingContinuation { continuation in
+            try await withCheckedThrowingContinuation {
+                (continuation: CheckedContinuation<Void, Error>) in
                 currentUser.updatePassword(to: self.newPassword) { error in
                     if let error {
                         continuation.resume(throwing: error)
@@ -150,7 +142,8 @@ final class SettingsViewModel: ObservableObject {
         await performLoadingTask {
             try await self.settingsRepository.deleteSettings(for: currentUser.uid)
 
-            try await withCheckedThrowingContinuation { continuation in
+            try await withCheckedThrowingContinuation {
+                (continuation: CheckedContinuation<Void, Error>) in
                 currentUser.delete { error in
                     if let error {
                         continuation.resume(throwing: error)
