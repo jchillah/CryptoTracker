@@ -9,50 +9,45 @@ import Foundation
 import SwiftData
 
 @MainActor
-class PriceChartViewModel: ObservableObject {
-    @Published var allPriceData: [ChartData] = []
-    @Published var isLoading: Bool = false
-    @Published var errorMessage: String? = nil
-    @Published var selectedCurrency: String = "usd" {
-        didSet {
-            applyConversionRate()
-        }
-    }
-    
-    var conversionRates: [String: Double] = ["usd": 1.0, "eur": 0.92, "gbp": 0.78]
-    
-    private var service: ChartDataService
-    
+final class PriceChartViewModel: ObservableObject {
+    @Published private(set) var allPriceData: [ChartData] = []
+    @Published private(set) var isLoading = false
+    @Published private(set) var errorMessage: String?
+
+    private let service: ChartDataService
+
     init(modelContext: ModelContext) {
-        self.service = ChartDataService(modelContext: modelContext)
+        service = ChartDataService(modelContext: modelContext)
     }
-    
-    func fetchPriceHistory(for coinId: String) async {
+
+    func fetchPriceHistory(
+        for coinID: String,
+        currency: String
+    ) async {
         isLoading = true
         errorMessage = nil
+        defer { isLoading = false }
+
         do {
-            let data = try await service.fetchChartData(for: coinId, vsCurrency: "usd")
-            allPriceData = data
-            applyConversionRate() 
+            allPriceData = try await service.fetchChartData(
+                for: coinID,
+                vsCurrency: currency
+            )
         } catch {
+            allPriceData = []
             errorMessage = error.localizedDescription
         }
-        isLoading = false
     }
-    
+
     func filteredData(for duration: ChartDuration) -> [ChartData] {
-        let cutoffDate = Calendar.current.date(byAdding: .day, value: -duration.days, to: Date()) ?? Date()
+        guard let cutoffDate = Calendar.current.date(
+            byAdding: .day,
+            value: -duration.days,
+            to: .now
+        ) else {
+            return allPriceData
+        }
+
         return allPriceData.filter { $0.date >= cutoffDate }
-    }
-    
-    func conversionFactor() -> Double {
-        let baseRate = conversionRates["usd"] ?? 1.0
-        let targetRate = conversionRates[selectedCurrency.lowercased()] ?? 1.0
-        return targetRate / baseRate
-    }
-    
-    func applyConversionRate() {
-        let factor = conversionFactor()
-        allPriceData = allPriceData.map { ChartData(date: $0.date, price: $0.price * factor) }
     }
 }
