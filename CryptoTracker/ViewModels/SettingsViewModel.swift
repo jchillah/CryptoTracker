@@ -29,6 +29,22 @@ final class SettingsViewModel: ObservableObject {
         self.favoritesRepository = favoritesRepository
     }
 
+    func loadSettings() async {
+        guard let userID = Auth.auth().currentUser?.uid else {
+            updateMessage = nil
+            return
+        }
+
+        do {
+            let settings = try await settingsRepository.fetchSettings(for: userID)
+            if let isDarkMode = settings["isDarkMode"] as? Bool {
+                storedDarkMode = isDarkMode
+            }
+        } catch {
+            updateMessage = error.localizedDescription
+        }
+    }
+
     func setDarkMode(_ isEnabled: Bool) async {
         storedDarkMode = isEnabled
 
