@@ -14,15 +14,19 @@ final class AuthService {
     private init() { }
 
     func signUp(email: String, password: String) async throws -> User {
-        try await Auth.auth()
-            .createUser(withEmail: email, password: password)
-            .user
+        let result = try await Auth.auth().createUser(
+            withEmail: email,
+            password: password
+        )
+        return result.user
     }
 
     func signIn(email: String, password: String) async throws -> User {
-        try await Auth.auth()
-            .signIn(withEmail: email, password: password)
-            .user
+        let result = try await Auth.auth().signIn(
+            withEmail: email,
+            password: password
+        )
+        return result.user
     }
 
     func sendPasswordReset(email: String) async throws {
