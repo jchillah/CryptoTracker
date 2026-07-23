@@ -79,8 +79,7 @@ struct CryptoDetailView: View {
             HStack {
                 Text("24h Preisänderung")
                 Spacer()
-                Text(coin.priceChangePercentage24h, format: .number.precision(.fractionLength(2)))
-                    + Text(" %")
+                Text("\(coin.priceChangePercentage24h, specifier: "%.2f") %")
             }
             .foregroundStyle(
                 Color.priceChangeColor(for: coin.priceChangePercentage24h)
