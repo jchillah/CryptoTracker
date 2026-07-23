@@ -5,15 +5,15 @@
 //  Created by Michael Winkler on 17.03.25.
 //
 
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 struct AppView: View {
     @EnvironmentObject private var authViewModel: AuthViewModel
     @EnvironmentObject private var favoritesViewModel: FavoritesViewModel
     @EnvironmentObject private var cryptoViewModel: CryptoListViewModel
     @EnvironmentObject private var settingsViewModel: SettingsViewModel
-    
+
     var body: some View {
         Group {
             if authViewModel.currentUser == nil {
@@ -26,15 +26,25 @@ struct AppView: View {
                     .environmentObject(settingsViewModel)
             }
         }
+        .task(id: authViewModel.currentUser?.uid) {
+            await favoritesViewModel.loadFavorites()
+            await settingsViewModel.loadSettings()
+        }
     }
 }
 
 #Preview {
-    let container = try! ModelContainer(for: Schema([CryptoEntity.self, ChartDataEntity.self]))
+    let container = try! ModelContainer(
+        for: Schema([CryptoEntity.self, ChartDataEntity.self]),
+        configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+    )
+
     AppView()
         .environmentObject(AuthViewModel())
         .environmentObject(FavoritesViewModel())
-        .environmentObject(CryptoListViewModel(modelContext: container.mainContext))
+        .environmentObject(
+            CryptoListViewModel(modelContext: container.mainContext)
+        )
         .environmentObject(SettingsViewModel())
         .modelContainer(container)
 }
