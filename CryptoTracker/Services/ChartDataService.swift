@@ -126,7 +126,10 @@ final class ChartDataService {
             coinID: coinID,
             currency: currency
         )
-        existingData.forEach(modelContext.delete)
+
+        for entity in existingData {
+            modelContext.delete(entity)
+        }
 
         for dataPoint in chartData {
             modelContext.insert(
