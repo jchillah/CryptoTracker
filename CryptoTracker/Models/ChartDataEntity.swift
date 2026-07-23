@@ -5,21 +5,30 @@
 //  Created by Michael Winkler on 19.03.25.
 //
 
-import SwiftData
 import Foundation
+import SwiftData
 
 @Model
-class ChartDataEntity: Identifiable {
-    @Attribute(.unique) var id: UUID = UUID()
+final class ChartDataEntity: Identifiable {
+    @Attribute(.unique) var id: UUID
+    var coinID: String = ""
+    var currency: String = "usd"
     var date: Date
     var price: Double
-    
-    init(from chartData: ChartData) {
-        self.date = chartData.date
-        self.price = chartData.price
+
+    init(
+        from chartData: ChartData,
+        coinID: String,
+        currency: String
+    ) {
+        id = UUID()
+        self.coinID = coinID
+        self.currency = currency.lowercased()
+        date = chartData.date
+        price = chartData.price
     }
-    
-    func toChartData() -> ChartData {
-        return ChartData(date: self.date, price: self.price)
+
+    func toDomain() -> ChartData {
+        ChartData(date: date, price: price)
     }
 }
