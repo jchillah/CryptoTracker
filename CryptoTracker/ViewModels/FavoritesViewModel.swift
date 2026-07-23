@@ -5,56 +5,69 @@
 //  Created by Michael Winkler on 18.03.25.
 //
 
-import Foundation
 import FirebaseAuth
+import Foundation
 
 @MainActor
-class FavoritesViewModel: ObservableObject {
-    @Published var favoriteIDs: Set<String> = []
-    
-    init() {
-        loadFavorites()
+final class FavoritesViewModel: ObservableObject {
+    @Published private(set) var favoriteIDs: Set<String> = []
+    @Published private(set) var errorMessage: String?
+    @Published private(set) var isLoading = false
+
+    private let repository: FavoritesRepository
+
+    init(repository: FavoritesRepository = .shared) {
+        self.repository = repository
     }
-    
-    func loadFavorites() {
+
+    func loadFavorites() async {
+        errorMessage = nil
+
         guard let userID = Auth.auth().currentUser?.uid else {
-            print("Kein angemeldeter Benutzer oder keine Email gefunden.")
+            favoriteIDs = []
             return
         }
-        
-        Task {
-            do {
-                let fetched = try await FavoritesRepository.shared.fetchFavorites(for: userID)
-                self.favoriteIDs = fetched
-            } catch {
-                print("Fehler beim Laden der Favoriten: \(error)")
-            }
+
+        isLoading = true
+        defer { isLoading = false }
+
+        do {
+            favoriteIDs = try await repository.fetchFavorites(for: userID)
+        } catch {
+            favoriteIDs = []
+            errorMessage = error.localizedDescription
         }
     }
-    
-    func toggleFavorite(coin: Crypto) {
-        guard let userID = Auth.auth().currentUser?.uid,
-              let email = Auth.auth().currentUser?.email else {
-            print("Kein angemeldeter Benutzer oder keine Email gefunden.")
+
+    func toggleFavorite(coin: Crypto) async {
+        guard let user = Auth.auth().currentUser,
+              let email = user.email else {
+            errorMessage = "Bitte melden Sie sich an, um Favoriten zu speichern."
             return
         }
-        
+
+        errorMessage = nil
+        let previousFavorites = favoriteIDs
+
         if favoriteIDs.contains(coin.id) {
             favoriteIDs.remove(coin.id)
         } else {
             favoriteIDs.insert(coin.id)
         }
-        
-        Task {
-            do {
-                try await FavoritesRepository.shared.updateFavorites(favorites: favoriteIDs, for: userID, userEmail: email)
-            } catch {
-                print("Fehler beim Speichern der Favoriten: \(error)")
-            }
+
+        do {
+            try await repository.updateFavorites(
+                favorites: favoriteIDs,
+                for: user.uid,
+                userEmail: email
+            )
+        } catch {
+            favoriteIDs = previousFavorites
+            errorMessage = error.localizedDescription
         }
     }
-    
+
     func isFavorite(coin: Crypto) -> Bool {
-        return favoriteIDs.contains(coin.id)
+        favoriteIDs.contains(coin.id)
     }
 }
