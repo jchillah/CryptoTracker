@@ -40,8 +40,7 @@ final class FavoritesViewModel: ObservableObject {
     }
 
     func toggleFavorite(coin: Crypto) async {
-        guard let user = Auth.auth().currentUser,
-              let email = user.email else {
+        guard let userID = Auth.auth().currentUser?.uid else {
             errorMessage = "Bitte melden Sie sich an, um Favoriten zu speichern."
             return
         }
@@ -58,8 +57,7 @@ final class FavoritesViewModel: ObservableObject {
         do {
             try await repository.updateFavorites(
                 favorites: favoriteIDs,
-                for: user.uid,
-                userEmail: email
+                for: userID
             )
         } catch {
             favoriteIDs = previousFavorites
