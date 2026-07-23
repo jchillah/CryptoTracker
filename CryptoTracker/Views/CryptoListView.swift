@@ -34,7 +34,7 @@ struct CryptoListView: View {
                                 CryptoDetailView(
                                     coin: coin,
                                     currency: cryptoViewModel.selectedCurrency,
-                                    applyConversion: true
+                                    applyConversion: false
                                 )
                                 .environmentObject(cryptoViewModel)
                                 .environmentObject(favoritesViewModel)
