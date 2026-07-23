@@ -8,22 +8,31 @@
 import Foundation
 
 @MainActor
-class NewsViewModel: ObservableObject {
-    @Published var articles: [NewsArticle] = []
-    @Published var isLoading: Bool = false
-    @Published var errorMessage: String? = nil
-    
-    private let newsService = NewsService()
-    
-    func fetchNews() async {
+final class NewsViewModel: ObservableObject {
+    @Published private(set) var articles: [NewsArticle] = []
+    @Published private(set) var isLoading = false
+    @Published private(set) var errorMessage: String?
+
+    private let newsService: NewsService
+    private var hasLoaded = false
+
+    init(newsService: NewsService = NewsService()) {
+        self.newsService = newsService
+    }
+
+    func fetchNews(force: Bool = false) async {
+        guard force || !hasLoaded else { return }
+
         isLoading = true
         errorMessage = nil
+        defer { isLoading = false }
+
         do {
-            let fetchedArticles = try await newsService.fetchNews()
-            articles = fetchedArticles
+            articles = try await newsService.fetchNews()
+                .sorted { $0.publishedAt > $1.publishedAt }
+            hasLoaded = true
         } catch {
             errorMessage = error.localizedDescription
         }
-        isLoading = false
     }
 }
