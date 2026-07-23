@@ -2,17 +2,12 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
     function ownsUserDocument(userId) {
-      return isSignedIn() && request.auth.uid == userId;
+      return request.auth != null && request.auth.uid == userId;
     }
 
     function hasValidUserData(data) {
-      return data.keys().hasOnly(['email', 'favorites', 'isDarkMode'])
-        && (!('email' in data) || data.email is string)
+      return data.keys().hasOnly(['favorites', 'isDarkMode'])
         && (!('favorites' in data)
           || (data.favorites is list && data.favorites.size() <= 100))
         && (!('isDarkMode' in data) || data.isDarkMode is bool);
